@@ -1,6 +1,7 @@
 """Amazon CloudWatch Logs."""
 
 import logging
+import time
 
 from boto.logs import connect_to_region
 from boto.logs.exceptions import \
@@ -47,12 +48,17 @@ class Handler(logging.Handler):
     def flush(self):
         if not self.events:
             return
-        try:
-            response = self.connection.put_log_events(
-                self.group, self.stream, self.events, self.token)
-        except InvalidSequenceTokenException as ex:
-            self.token = ex.body['expectedSequenceToken']
-            response = self.connection.put_log_events(
-                self.group, self.stream, self.events, self.token)
-        self.token = response['nextSequenceToken']
-        self.events = []
+        for _ in range(6):
+            try:
+                try:
+                    response = self.connection.put_log_events(
+                        self.group, self.stream, self.events, self.token)
+                except InvalidSequenceTokenException as ex:
+                    self.token = ex.body['expectedSequenceToken']
+                    response = self.connection.put_log_events(
+                        self.group, self.stream, self.events, self.token)
+                self.token = response['nextSequenceToken']
+                self.events = []
+                break
+            except Exception:
+                time.sleep(30)

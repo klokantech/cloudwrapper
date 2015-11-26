@@ -38,7 +38,7 @@ class Queue(BaseQueue):
     def qsize(self):
         return self.handle.count()
 
-    def put(self, item, block=True, timeout=None):
+    def put(self, item, block=True, timeout=None, delay=None):
         """Put item into the queue.
 
         Note that SQS doesn't implement non-blocking or timeouts for writes,
@@ -46,7 +46,7 @@ class Queue(BaseQueue):
         """
         if not (block and timeout is None):
             raise Exception('block and timeout must have default values')
-        self.handle.write(self.handle.new_message(item))
+        self.handle.write(self.handle.new_message(item), delay_seconds=delay)
 
     def get(self, block=True, timeout=None):
         """Get item from the queue.

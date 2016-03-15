@@ -10,6 +10,8 @@ class GoogleComputeEngine(object):
         self._id = None
         self._name = None
         self._zone = None
+        self._externalIp = None
+        self._internalIp = None
         try:
             self._id = requests.get(self.server + "id", headers=self.headers).text
         except requests.exceptions.ConnectTimeout:
@@ -43,3 +45,18 @@ class GoogleComputeEngine(object):
             self._zone = requests.get(self.server + "zone", headers=self.headers).text
         return self._zone
 
+
+    def instanceExternalIP(self):
+        if not self.is_instance:
+            return ''
+        if self._externalIp is None:
+            self._externalIp = requests.get(self.server + "network-interfaces/0/access-configs/0/external-ip", headers=self.headers).text
+        return self._externalIp
+
+
+    def instanceInternalIP(self):
+        if not self.is_instance:
+            return ''
+        if self._internalIp is None:
+            self._internalIp = requests.get(self.server + "network-interfaces/0/ip", headers=self.headers).text
+        return self._internalIp

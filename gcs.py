@@ -5,7 +5,7 @@ import os
 from gcloud import storage
 
 
-class GCSConnection(object):
+class GcsConnection(object):
 
     def __init__(self):
         self.connection = storage.Client()

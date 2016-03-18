@@ -50,24 +50,29 @@ class Queue(BaseQueue):
             raise Exception('block and timeout must have default values')
         self.handle.insert_task(description=json.dumps(item))
 
+    def _get_message(self, lease_time):
+        """Get one message with lease_time
+        """
+        for task in self.handle.lease(lease_time=lease_time, num_tasks=1):
+            return task
+        return None
+
     def get(self, block=True, timeout=None, lease_time=3600):
         """Get item from the queue.
 
-        Note that GTQ doesn't implement non-blocking or timeouts for writes,
-        so both 'block' and 'timeout' must have their default values only.
-
         Default lease_time is 1 hour.
         """
-        if not (block and timeout is None):
-            raise Exception('block and timeout must have default values')
 
-        self.message = None
-        for task in self.handle.lease(lease_time=lease_time, num_tasks=1):
-            self.message = task
-            break
+        self.message = self._get_message(lease_time)
+        if block:
+            while self.message is None:
+                # Sleep at least 20 seconds before next message receive
+                sleep(timeout if timeout is not None else 20)
+                self.message = self._get_message(lease_time)
 
         if self.message is None:
             raise Empty
+
         return json.loads(self.message.description)
 
     def task_done(self):

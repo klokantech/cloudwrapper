@@ -37,7 +37,7 @@ class Bucket(object):
         #     raise
 
     def get(self, source, target):
-        key = self.handle.blob(source)
+        key = self.handle.get_blob(source)
         key.download_to_filename(target)
 
     def has(self, source):

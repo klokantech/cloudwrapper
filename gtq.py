@@ -2,6 +2,7 @@
 
 from Queue import Empty
 
+from time import sleep
 from gcloud_taskqueue import Taskqueue, Client
 
 from .base import BaseQueue

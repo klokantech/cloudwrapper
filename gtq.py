@@ -16,7 +16,7 @@ class GtqConnection(object):
         self.client = Client()
 
     def queue(self, name):
-        return Queue(Taskqueue(client=self.client, id=name))
+        return Queue(Taskqueue(client=self.client, id=name), self.client)
 
 
 class Queue(BaseQueue):
@@ -29,8 +29,9 @@ class Queue(BaseQueue):
     parameter, and others, are configured outside this module.
     """
 
-    def __init__(self, handle):
+    def __init__(self, handle, client):
         self.handle = handle
+        self.client = client
         self.message = None
 
     def qsize(self):
@@ -49,14 +50,27 @@ class Queue(BaseQueue):
         """
         if not (block and timeout is None):
             raise Exception('block and timeout must have default values')
-        self.handle.insert_task(description=json.dumps(item))
+        for _ in range(6):
+            try:
+                self.handle.insert_task(description=json.dumps(item), client=self.client)
+                break
+            except IOError as e:
+                if e.errno == errno.EPIPE:
+                    self.client = Client()
+                time.sleep(10)
 
     def _get_message(self, lease_time):
         """Get one message with lease_time
         """
-        for task in self.handle.lease(lease_time=lease_time, num_tasks=1):
-            return task
-        return None
+        for _ in range(6):
+            try:
+                for task in self.handle.lease(lease_time=lease_time, num_tasks=1, client=self.client):
+                    return task
+                return None
+            except IOError as e:
+                if e.errno == errno.EPIPE:
+                    self.client = Client()
+                time.sleep(10)
 
     def get(self, block=True, timeout=None, lease_time=3600):
         """Get item from the queue.
@@ -84,5 +98,12 @@ class Queue(BaseQueue):
         """
         if self.message is None:
             raise Exception('no message to acknowledge')
-        self.message.delete()
-        self.message = None
+        for _ in range(6):
+            try:
+                self.message.delete(client=self.client)
+                self.message = None
+                break
+            except IOError as e:
+                if e.errno == errno.EPIPE:
+                    self.client = Client()
+                time.sleep(10)

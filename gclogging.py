@@ -36,7 +36,10 @@ class Handler(logging.Handler):
                 'type': 'gce_instance' if self.gce.isInstance() else 'none',
                 'labels': {
                     'instance_id': self.gce.instanceId(),
-                    'zone': self.gce.instanceZone()
+                    'zone': self.gce.instanceZone(),
+                    'internal_ip': self.gce.instanceInternalIP(),
+                    'external_ip': self.gce.instanceExternalIP(),
+                    'instance_name': self.gce.instanceName()
                 }
             },
             'entries': [],
@@ -60,5 +63,10 @@ class Handler(logging.Handler):
                     body=self.body).execute()
                 self.entries = []
                 break
+            except IOError as e:
+                if e.errno == errno.EPIPE:
+                    credentials = GoogleCredentials.get_application_default()
+                    self.connection = build('logging', 'v2beta1', credentials=credentials)
+                time.sleep(10)
             except Exception:
                 time.sleep(30)

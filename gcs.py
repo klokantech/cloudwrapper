@@ -11,7 +11,13 @@ class GcsConnection(object):
         self.connection = storage.Client()
 
     def bucket(self, name):
-        return Bucket(self.connection.get_bucket(name))
+        for _ in range(6):
+            try:
+                return Bucket(self.connection.get_bucket(name))
+            except IOError as e:
+                if e.errno == errno.EPIPE:
+                    self.connection = storage.Client()
+                time.sleep(10)
 
 
 

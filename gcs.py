@@ -2,7 +2,9 @@
 
 import os
 
+from time import sleep
 from gcloud import storage
+from gcloud.exceptions import GCloudError
 
 
 class GcsConnection(object):
@@ -17,7 +19,9 @@ class GcsConnection(object):
             except IOError as e:
                 if e.errno == errno.EPIPE:
                     self.connection = storage.Client()
-                time.sleep(10)
+                sleep(10)
+            except GCloudError:
+                sleep(30)
 
 
 

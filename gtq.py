@@ -4,6 +4,7 @@ from Queue import Empty
 
 from time import sleep
 from gcloud_taskqueue import Taskqueue, Client
+from gcloud.exceptions import GCloudError
 
 from .base import BaseQueue
 
@@ -57,7 +58,9 @@ class Queue(BaseQueue):
             except IOError as e:
                 if e.errno == errno.EPIPE:
                     self.client = Client()
-                time.sleep(10)
+                sleep(10)
+            except GCloudError:
+                sleep(30)
 
     def _get_message(self, lease_time):
         """Get one message with lease_time
@@ -70,7 +73,9 @@ class Queue(BaseQueue):
             except IOError as e:
                 if e.errno == errno.EPIPE:
                     self.client = Client()
-                time.sleep(10)
+                sleep(10)
+            except GCloudError:
+                sleep(30)
 
     def get(self, block=True, timeout=None, lease_time=3600):
         """Get item from the queue.
@@ -106,4 +111,6 @@ class Queue(BaseQueue):
             except IOError as e:
                 if e.errno == errno.EPIPE:
                     self.client = Client()
-                time.sleep(10)
+                sleep(10)
+            except GCloudError:
+                sleep(30)

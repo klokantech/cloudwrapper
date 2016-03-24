@@ -37,10 +37,12 @@ class Handler(logging.Handler):
                 'labels': {
                     'instance_id': self.gce.instanceId(),
                     'zone': self.gce.instanceZone(),
-                    'internal_ip': self.gce.instanceInternalIP(),
-                    'external_ip': self.gce.instanceExternalIP(),
-                    'instance_name': self.gce.instanceName()
                 }
+            },
+            'labels': {
+                'internal_ip': self.gce.instanceInternalIP(),
+                'external_ip': self.gce.instanceExternalIP(),
+                'instance_name': self.gce.instanceName()
             },
             'entries': [],
         }

@@ -1,11 +1,11 @@
 """Google Cloud Storage using GCE Authentication."""
 
 import os
+import errno
 
 from time import sleep
 from gcloud import storage
 from gcloud.exceptions import GCloudError
-
 
 class GcsConnection(object):
 

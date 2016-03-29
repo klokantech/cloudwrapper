@@ -9,6 +9,7 @@ from gcloud.exceptions import GCloudError
 from .base import BaseQueue
 
 import json
+import errno
 
 
 class GtqConnection(object):

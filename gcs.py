@@ -51,7 +51,15 @@ class Bucket(object):
             try:
                 progress, response = request.next_chunk()
             except HttpError, err:
-                if err.resp.status < 500:
+                # Bad request, try new credentials
+                if err.resp.status == 400:
+                    credentials = GoogleCredentials.get_application_default()
+                    self.handle = discovery.build('storage', 'v1', credentials=credentials)
+                    self.handle.objects().insert(
+                        bucket=self.name,
+                        name=target,
+                        media_body=media)
+                elif err.resp.status < 500:
                     raise err
                 error = err
             except (httplib2.HttpLib2Error, IOError), err:

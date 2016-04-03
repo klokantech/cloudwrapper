@@ -12,8 +12,10 @@ class GoogleComputeEngine(object):
         self._zone = None
         self._externalIp = None
         self._internalIp = None
+        self._projectId = None
         try:
             self._id = requests.get(self.server + "id", headers=self.headers).text
+            self._projectId = requests.get('http://metadata/computeMetadata/v1/project/project-id', headers=self.headers).text
         except requests.exceptions.ConnectTimeout:
             self.is_instance = False
         else:
@@ -42,7 +44,9 @@ class GoogleComputeEngine(object):
         if not self.is_instance:
             return ''
         if self._zone is None:
-            self._zone = requests.get(self.server + "zone", headers=self.headers).text
+            resp = requests.get(self.server + "zone", headers=self.headers).text
+            # Returns: projects/pid/zones/<zone>
+            self._zone = resp.split('/')[-1]
         return self._zone
 
 
@@ -60,3 +64,11 @@ class GoogleComputeEngine(object):
         if self._internalIp is None:
             self._internalIp = requests.get(self.server + "network-interfaces/0/ip", headers=self.headers).text
         return self._internalIp
+
+
+    def projectId(self):
+        if not self.is_instance:
+            return None
+        # Project ID should be requested only once in constructor!
+        return self._projectId
+

@@ -48,7 +48,14 @@ class GoogleCustomMetric(object):
             'valueType': valueType,
             'unit': 'items',
             'description': description,
-            'displayName': displayName
+            'displayName': displayName,
+            'labels': [
+                {
+                    'key': 'compute.googleapis.com/resource_id',
+                    'valueType': 'STRING',
+                    'description': 'Google Compute Instance ID'
+                }
+            ]
         }
 
         response = self.client.projects().metricDescriptors().create(
@@ -167,6 +174,7 @@ class GoogleCustomMetric(object):
         self.points = []
         self._addPoint(value, startTime, endTime)
         try:
+            metricLabels += {'compute.googleapis.com/resource_id': self.gce.instanceId()}
             timeseries_data = {
                 'metric': {
                     'type': '{}/{}'.format(self.CUSTOM_METRIC_DOMAIN, self.metricType),

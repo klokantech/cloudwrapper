@@ -14,7 +14,8 @@ from .gce import GoogleComputeEngine
 class GoogleCustomMetric(object):
 
     # This is the namespace for all custom metrics
-    CUSTOM_METRIC_DOMAIN = "custom.googleapis.com"
+    # CUSTOM_METRIC_DOMAIN = "custom.googleapis.com"
+    CUSTOM_METRIC_DOMAIN = "custom.cloudmonitoring.googleapis.com"
 
     def _format_rfc3339(self, dt):
         """Formats a datetime per RFC 3339.
@@ -26,12 +27,16 @@ class GoogleCustomMetric(object):
     def __init__(self, metricType, projectId=None):
         self.metricType = metricType
         credentials = GoogleCredentials.get_application_default()
-        self.client = build('monitoring', 'v3', credentials=credentials)
+        #self.client = build('monitoring', 'v3', credentials=credentials)
+        self.client = build('cloudmonitoring', 'v2beta2', credentials=credentials)
         self.gce = GoogleComputeEngine()
         if projectId is None:
-            projectId = 'projects/' + self.gce.projectId()
-        elif 'projects/' not in projectId:
-            projectId = 'projects/' + projectId
+            #projectId = 'projects/' + self.gce.projectId()
+            projectId = self.gce.projectId()
+        elif 'projects/' in projectId:
+            projectId = projectId[10:]
+        # elif 'projects/' not in projectId:
+            # projectId = 'projects/' + projectId
         self.projectId = projectId
         self.points = []
         self.valueType = None
@@ -42,13 +47,17 @@ class GoogleCustomMetric(object):
         if displayName is None:
             displayName = self.metricType.replace('/', ' ')
         metrics_descriptor = {
-            'name': 'metricDescriptors/{}/{}'.format(self.CUSTOM_METRIC_DOMAIN, self.metricType),
-            'type': '{}/{}'.format(self.CUSTOM_METRIC_DOMAIN, self.metricType),
-            'metricKind': metricKind,
-            'valueType': valueType,
-            'unit': 'items',
+            #'name': 'metricDescriptors/{}/{}'.format(self.CUSTOM_METRIC_DOMAIN, self.metricType),
+            'name': '{}/{}'.format(self.CUSTOM_METRIC_DOMAIN, self.metricType),
+            'project': self.projectId,
+            #'type': '{}/{}'.format(self.CUSTOM_METRIC_DOMAIN, self.metricType),
+            'typeDescriptor': {
+                'metricType': metricKind.lower(),
+                'valueType': valueType.lower(),
+            },
+            # 'unit': 'items',
             'description': description,
-            'displayName': displayName,
+            #'displayName': displayName,
             'labels': [
                 {
                     'key': 'compute.googleapis.com/resource_id',
@@ -58,8 +67,12 @@ class GoogleCustomMetric(object):
             ]
         }
 
-        response = self.client.projects().metricDescriptors().create(
-            name=self.projectId, body=metrics_descriptor).execute()
+        try:
+            response = self.client.metricDescriptors().create(
+                project=self.projectId, body=metrics_descriptor).execute()
+        except Exception as e:
+            raise Exception('Failed to create custom metric: {}'.format(e))
+
 
         metric = self.get()
         while metric is None:
@@ -71,16 +84,28 @@ class GoogleCustomMetric(object):
 
     def get(self):
         try:
-            request = self.client.projects().metricDescriptors().get(
-                name='{}/metricDescriptors/{}/{}'.format(self.projectId,
-                    self.CUSTOM_METRIC_DOMAIN,
-                    self.metricType))
+            request = self.client.metricDescriptors().list(
+                project=self.projectId,
+                count=1,
+                query=self.metricType)
+                # name='{}/metricDescriptors/{}/{}'.format(self.projectId,
+                    # self.CUSTOM_METRIC_DOMAIN,
+                    # self.metricType))
             response = request.execute()
-            if 'valueType' in response:
-                self.valueType = response['valueType']
-            if 'metricKind' in response:
-                self.metricKind = response['metricKind']
-            return response
+            metric = None
+            if 'metrics' in response:
+                for md in response['metrics']:
+                    if md['name'] == '{}/{}'.format(self.CUSTOM_METRIC_DOMAIN, self.metricType):
+                        metric = md
+            else:
+                return None
+                #raise Exception('Failed to get custom metric {}: {}'.format(self.metricType, str(response)))
+
+            if 'valueType' in metric['typeDescriptor']:
+                self.valueType = metric['typeDescriptor']['valueType'].upper()
+            if 'metricType' in metric['typeDescriptor']:
+                self.metricKind = metric['typeDescriptor']['metricType'].upper()
+            return metric
         except HttpError as ex:
             if ex.resp.status == 404:
                 return None
@@ -101,14 +126,16 @@ class GoogleCustomMetric(object):
                 endTime = datetime.datetime.utcnow()
             elif not isinstance(endTime, datetime):
                 raise Exception('Datetime object is required as endTime!')
-            request = self.client.projects().timeSeries().list(
-                name=self.projectId,
-                filter='metric.type="{}/{}"'.format(
+            request = self.client.timeseries().list(
+                project=self.projectId,
+                mentric="{}/{}".format(
                     self.CUSTOM_METRIC_DOMAIN,
                     self.metricType),
-                pageSize=pageSize,
-                interval_startTime=self._format_rfc3339(startTime),
-                interval_endTime=self._format_rfc3339(endTime)
+                count=pageSize,
+                # interval_startTime=self._format_rfc3339(startTime),
+                youngest=self._format_rfc3339(startTime),
+                # interval_endTime=self._format_rfc3339(endTime)
+                oldest=self._format_rfc3339(endTime)
             )
             response = request.execute()
             return response
@@ -156,42 +183,55 @@ class GoogleCustomMetric(object):
                 raise Exception('Datetime object is required as endTime!')
 
         self.points.append({
-            'interval': {
-                'startTime': self._format_rfc3339(startTime),
-                'endTime': self._format_rfc3339(endTime)
-            },
-            'value': {
-                valueType: value
-            }
+            # 'interval': {
+                # 'startTime': self._format_rfc3339(startTime),
+                # 'endTime': self._format_rfc3339(endTime)
+            # },
+            'start': self._format_rfc3339(startTime),
+            'end': self._format_rfc3339(endTime),
+            # 'value': {
+            valueType: value
+            # }
         })
 
 
     def write(self, value, startTime=None, endTime=None, metricLabels=None):
         if metricLabels is None:
             metricLabels = {}
+        else:
+            metricLabels = metricLabels.copy()
         # if len(self.points) == 0:
         #     raise Exception('Missing at least one point of metric to write!')
         self.points = []
         self._addPoint(value, startTime, endTime)
         try:
-            metricLabels += {'compute.googleapis.com/resource_id': self.gce.instanceId()}
+            metricLabels.update({
+                'compute.googleapis.com/resource_id': self.gce.instanceId()
+            })
+            timeseries_desc = {
+                'metric': '{}/{}'.format(self.CUSTOM_METRIC_DOMAIN, self.metricType),
+                'project': self.projectId,
+                'labels': metricLabels,
+                #'metric': {
+                #    'type': '{}/{}'.format(self.CUSTOM_METRIC_DOMAIN, self.metricType),
+                #    'labels': metricLabels
+                #},
+                #'resource': {
+                #    'type': 'gce_instance' if self.gce.isInstance() else 'none',
+                #    'labels': {
+                #        'instance_id': self.gce.instanceId(),
+                #        'zone': self.gce.instanceZone(),
+                #    }
+                #},
+                # 'points': self.points
+            }
             timeseries_data = {
-                'metric': {
-                    'type': '{}/{}'.format(self.CUSTOM_METRIC_DOMAIN, self.metricType),
-                    'labels': metricLabels
-                },
-                'resource': {
-                    'type': 'gce_instance' if self.gce.isInstance() else 'none',
-                    'labels': {
-                        'instance_id': self.gce.instanceId(),
-                        'zone': self.gce.instanceZone(),
-                    }
-                },
-                'points': self.points
+                'timeseriesDesc': timeseries_desc,
+                'point': self.points[0]
             }
 
-            request = self.client.projects().timeSeries().create(
-                name=self.projectId, body={"timeSeries": [timeseries_data]})
+            request = self.client.timeseries().write(
+                project=self.projectId, body={"timeseries": [timeseries_data, ]})
             request.execute()
             self.points = []
             return True

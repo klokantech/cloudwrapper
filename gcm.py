@@ -234,8 +234,8 @@ class GoogleCustomMetric(object):
                 project=self.projectId, body={"timeseries": [timeseries_data, ]})
             request.execute()
             self.points = []
-            return True
+            # return True
         except:
-            # raise
-            return False
+            raise
+            # return False
 

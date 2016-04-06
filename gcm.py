@@ -204,38 +204,47 @@ class GoogleCustomMetric(object):
         #     raise Exception('Missing at least one point of metric to write!')
         self.points = []
         self._addPoint(value, startTime, endTime)
-        try:
-            metricLabels.update({
-                'compute.googleapis.com/resource_id': self.gce.instanceId()
-            })
-            timeseries_desc = {
-                'metric': '{}/{}'.format(self.CUSTOM_METRIC_DOMAIN, self.metricType),
-                'project': self.projectId,
-                'labels': metricLabels,
-                #'metric': {
-                #    'type': '{}/{}'.format(self.CUSTOM_METRIC_DOMAIN, self.metricType),
-                #    'labels': metricLabels
-                #},
-                #'resource': {
-                #    'type': 'gce_instance' if self.gce.isInstance() else 'none',
-                #    'labels': {
-                #        'instance_id': self.gce.instanceId(),
-                #        'zone': self.gce.instanceZone(),
-                #    }
-                #},
-                # 'points': self.points
-            }
-            timeseries_data = {
-                'timeseriesDesc': timeseries_desc,
-                'point': self.points[0]
-            }
+        lastException = None
+        for _ in range(6):
+            try:
+                metricLabels.update({
+                    'compute.googleapis.com/resource_id': self.gce.instanceId()
+                })
+                timeseries_desc = {
+                    'metric': '{}/{}'.format(self.CUSTOM_METRIC_DOMAIN, self.metricType),
+                    'project': self.projectId,
+                    'labels': metricLabels,
+                    #'metric': {
+                    #    'type': '{}/{}'.format(self.CUSTOM_METRIC_DOMAIN, self.metricType),
+                    #    'labels': metricLabels
+                    #},
+                    #'resource': {
+                    #    'type': 'gce_instance' if self.gce.isInstance() else 'none',
+                    #    'labels': {
+                    #        'instance_id': self.gce.instanceId(),
+                    #        'zone': self.gce.instanceZone(),
+                    #    }
+                    #},
+                    # 'points': self.points
+                }
+                timeseries_data = {
+                    'timeseriesDesc': timeseries_desc,
+                    'point': self.points[0]
+                }
 
-            request = self.client.timeseries().write(
-                project=self.projectId, body={"timeseries": [timeseries_data, ]})
-            request.execute()
-            self.points = []
-            # return True
-        except:
-            raise
-            # return False
+                request = self.client.timeseries().write(
+                    project=self.projectId, body={"timeseries": [timeseries_data, ]})
+                request.execute()
+                self.points = []
+                return True
+            except IOError as e:
+                if e.errno == errno.EPIPE:
+                    credentials = GoogleCredentials.get_application_default()
+                    #self.client = build('monitoring', 'v3', credentials=credentials)
+                    self.client = build('cloudmonitoring', 'v2beta2', credentials=credentials)
+                    self.gce = GoogleComputeEngine()
+                lastException = e
+                sleep(10)
+        if lastException is not None:
+            raise lastException
 

@@ -38,9 +38,14 @@ class Queue(BaseQueue):
         self.handle = handle
         self.client = client
         self.message = None
+        self.available_timestamp = None
+        self._reconnect()
+
+
+    def _reconnect(self):
         credentials = GoogleCredentials.get_application_default()
         self.handle_api = build('taskqueue', 'v1beta2', credentials=credentials)
-        self.available_timestamp = None
+
 
     def qsize(self):
         """Implemented via REST API
@@ -138,14 +143,20 @@ class Queue(BaseQueue):
             return False
 
         # Get oldestTask from queue stats
-        try :
-            taskqueue = self.handle_api.taskqueues().get(project=self.handle.project, taskqueue=self.handle.id, getStats=True).execute()
-            # There is at least one availabe task
-            if float(taskqueue['stats']['oldestTask']) < now:
-                return True
-            # No available task, cache this response for 5 minutes
-            self.available_timestamp = now + 300 # 5 minutes
+        for _ in range(3):
+            try:
+                taskqueue = self.handle_api.taskqueues().get(project=self.handle.project, taskqueue=self.handle.id, getStats=True).execute()
+                break
+            except IOError as e:
+                if e.errno == errno.EPIPE:
+                    self._reconnect()
+                sleep(10)
+        else:
             return False
-        except:
-            return False
+        # There is at least one availabe task
+        if float(taskqueue['stats']['oldestTask']) < now:
+            return True
+        # No available task, cache this response for 5 minutes
+        self.available_timestamp = now + 300 # 5 minutes
+        return False
 

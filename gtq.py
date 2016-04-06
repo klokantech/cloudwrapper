@@ -5,11 +5,14 @@ from Queue import Empty
 from time import sleep
 from gcloud_taskqueue import Taskqueue, Client
 from gcloud.exceptions import GCloudError
+from googleapiclient.discovery import build
+from oauth2client.client import GoogleCredentials
 
 from .base import BaseQueue
 
 import json
 import errno
+import time
 
 
 class GtqConnection(object):
@@ -35,14 +38,20 @@ class Queue(BaseQueue):
         self.handle = handle
         self.client = client
         self.message = None
+        credentials = GoogleCredentials.get_application_default()
+        self.handle_api = build('taskqueue', 'v1beta2', credentials=credentials)
+        self.available_timestamp = None
 
     def qsize(self):
-        """WARNING! Not implemented in gcloud_taskqueue module
-        REST API available:
+        """Implemented via REST API
         GET https://www.googleapis.com/taskqueue/v1beta2/projects/project/taskqueues/taskqueue?getStats=true
         Response: see https://cloud.google.com/appengine/docs/python/taskqueue/rest/taskqueues#resource
         """
-        return 0
+        try :
+            taskqueue = self.handle_api.taskqueues().get(project=self.handle.project, taskqueue=self.handle.id, getStats=True).execute()
+        except:
+            return 0
+        return int(taskqueue['stats']['totalTasks'])
 
     def put(self, item, block=True, timeout=None, delay=None):
         """Put item into the queue.
@@ -115,3 +124,28 @@ class Queue(BaseQueue):
                 sleep(10)
             except GCloudError:
                 sleep(30)
+
+
+    def has_available(self):
+        """Is any message available for lease.
+
+        If there is no message, this state is cached internally for 5 minutes.
+        10 minutes is time used for Google Autoscaler.
+        """
+        now = time.time()
+        # We have cached False response
+        if self.available_timestamp is not None and self.available_timestamp < now:
+            return False
+
+        # Get oldestTask from queue stats
+        try :
+            taskqueue = self.handle_api.taskqueues().get(project=self.handle.project, taskqueue=self.handle.id, getStats=True).execute()
+            # There is at least one availabe task
+            if float(taskqueue['stats']['oldestTask']) < now:
+                return True
+            # No available task, cache this response for 5 minutes
+            self.available_timestamp = now + 300 # 5 minutes
+            return False
+        except:
+            return False
+

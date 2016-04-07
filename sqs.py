@@ -4,8 +4,11 @@ from Queue import Empty
 
 from boto.sqs import connect_to_region
 from boto.sqs.jsonmessage import JSONMessage
+from time import sleep
 
 from .base import BaseQueue
+
+import time
 
 
 class SqsConnection(object):
@@ -34,6 +37,7 @@ class Queue(BaseQueue):
         handle.set_message_class(JSONMessage)
         self.handle = handle
         self.message = None
+        self.available_timestamp = None
 
     def qsize(self):
         return self.handle.count()
@@ -77,3 +81,35 @@ class Queue(BaseQueue):
             raise Exception('no message to acknowledge')
         self.handle.delete_message(self.message)
         self.message = None
+
+
+    def has_available(self):
+        """Is any message available for lease.
+
+        If there is no message, this state is cached internally for 5 minutes.
+        10 minutes is time used for Google Autoscaler.
+        """
+        now = time.time()
+        # We have cached False response
+        if self.available_timestamp is not None and self.available_timestamp < now:
+            return False
+
+        # Get oldestTask from queue stats
+        exc = None
+        for _ in range(3):
+            try:
+                count = self.handle.count()
+                break
+            except IOError as e:
+                exc = e
+                sleep(10)
+        else:
+            if exc is not None:
+                raise exc
+            return False
+        # There is at least one availabe task
+        if int(count) > 0:
+            return True
+        # No available task, cache this response for 5 minutes
+        self.available_timestamp = now + 300 # 5 minutes
+        return False

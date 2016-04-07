@@ -2,11 +2,13 @@
 
 from Queue import Empty
 
-import beanstalkc
+from time import sleep
 
 from .base import BaseQueue
 
 import json
+import time
+import beanstalkc
 
 
 class BtdConnection(object):
@@ -39,6 +41,7 @@ class Queue(BaseQueue):
             if not self.name == tube:
                 self.handle.ignore(tube)
         self.message = None
+        self.available_timestamp = None
 
     def qsize(self):
         """Get size of ready jobs in current tube
@@ -90,3 +93,36 @@ class Queue(BaseQueue):
         if self.message is None:
             raise Exception('no message to acknowledge')
         self.message.touch()
+
+
+    def has_available(self):
+        """Is any message available for lease.
+
+        If there is no message, this state is cached internally for 5 minutes.
+        10 minutes is time used for Google Autoscaler.
+        """
+        now = time.time()
+        # We have cached False response
+        if self.available_timestamp is not None and self.available_timestamp < now:
+            return False
+
+        # Get oldestTask from queue stats
+        exc = None
+        for _ in range(3):
+            try:
+                stats = self.handle.stats_tube(self.name)
+                break
+            except IOError as e:
+                exc = e
+                sleep(10)
+        else:
+            if exc is not None:
+                raise exc
+            return False
+        # There is at least one availabe task
+        if int(stats['current-jobs-ready']) > 0:
+            return True
+        # No available task, cache this response for 5 minutes
+        self.available_timestamp = now + 300 # 5 minutes
+        return False
+

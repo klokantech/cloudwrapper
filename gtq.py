@@ -143,15 +143,19 @@ class Queue(BaseQueue):
             return False
 
         # Get oldestTask from queue stats
+        exc = None
         for _ in range(3):
             try:
                 taskqueue = self.handle_api.taskqueues().get(project=self.handle.project, taskqueue=self.handle.id, getStats=True).execute()
                 break
             except IOError as e:
+                exc = e
                 if e.errno == errno.EPIPE:
                     self._reconnect()
                 sleep(10)
         else:
+            if exc is not None:
+                raise exc
             return False
         # There is at least one availabe task
         if float(taskqueue['stats']['oldestTask']) < now:

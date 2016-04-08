@@ -140,27 +140,38 @@ class Queue(BaseQueue):
         now = time.time()
         # We have cached False response
         if self.available_timestamp is not None and self.available_timestamp < now:
+            print(['GTQ: has_available check, cached FALSE: now, cache timestamp', now, self.available_timestamp])
             return False
 
         # Get oldestTask from queue stats
         exc = None
-        for _ in range(3):
+        for _ in range(6):
             try:
                 taskqueue = self.handle_api.taskqueues().get(project=self.handle.project, taskqueue=self.handle.id, getStats=True).execute()
+                print(['GTQ: Received stats for Queue '+self.handle.id, taskqueue])
                 break
             except IOError as e:
                 exc = e
+                print(['GTQ: Catched IOError exception', e, e.errno])
                 if e.errno == errno.EPIPE:
                     self._reconnect()
                 sleep(10)
+            except Exception as e:
+                exc = e
+                print(['GTQ: Catched general exception', e, e.errno])
+                sleep(10)
         else:
+            print(['GTQ: Cannot get stats with 6 attempts, saved Exception: ', exc])
             if exc is not None:
                 raise exc
             return False
         # There is at least one availabe task
         if float(taskqueue['stats']['oldestTask']) < now:
+            print(['GTQ: OldestTask timeout is "ago", there is something available: ', 
+                float(taskqueue['stats']['oldestTask']), float(taskqueue['stats']['oldestTask']) < now])
             return True
         # No available task, cache this response for 5 minutes
         self.available_timestamp = now + 300 # 5 minutes
+        print(['GTQ: Caching FALSE response for 5 minutes: ', self.available_timestamp])
         return False
 

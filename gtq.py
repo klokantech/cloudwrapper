@@ -139,7 +139,7 @@ class Queue(BaseQueue):
         """
         now = time.time()
         # We have cached False response
-        if self.available_timestamp is not None and self.available_timestamp < now:
+        if self.available_timestamp is not None and now < self.available_timestamp:
             print(['GTQ: has_available check, cached FALSE: now, cache timestamp', now, self.available_timestamp])
             return False
 

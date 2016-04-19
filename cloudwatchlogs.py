@@ -1,4 +1,8 @@
-"""Amazon CloudWatch Logs."""
+"""Amazon CloudWatch Logs.
+
+Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
+Author: Vaclav Klusak <vaclav.klusak@klokantech.com>
+"""
 
 import logging
 import time

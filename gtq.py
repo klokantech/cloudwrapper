@@ -1,4 +1,8 @@
-"""Google Task Pull Queues."""
+"""Google Task Pull Queues.
+
+Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
+Author: Martin Mikita <martin.mikita@klokantech.com>
+"""
 
 from Queue import Empty
 

@@ -1,4 +1,9 @@
-"""Google Custom Metric."""
+"""
+Google Custom Metric.
+
+Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
+Author: Martin Mikita <martin.mikita@klokantech.com>
+"""
 
 import json
 import errno

@@ -1,4 +1,8 @@
-"""Google Cloud logging."""
+"""Google Cloud Logging.
+
+Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
+Author: Martin Mikita <martin.mikita@klokantech.com>
+"""
 
 import logging
 import time

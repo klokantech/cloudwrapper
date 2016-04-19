@@ -1,4 +1,8 @@
-"""Google Cloud Storage using GCE Authentication."""
+"""Google Cloud Storage using GCE Authentication.
+
+Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
+Author: Martin Mikita <martin.mikita@klokantech.com>
+"""
 
 import os
 import errno

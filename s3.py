@@ -1,4 +1,8 @@
-"""Amazon S3."""
+"""Amazon S3.
+
+Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
+Author: Vaclav Klusak <vaclav.klusak@klokantech.com>
+"""
 
 import os
 

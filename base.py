@@ -1,3 +1,11 @@
+"""
+Base class:
+
+BaseQueue
+
+Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
+"""
+
 class BaseQueue(object):
 
     def empty(self):

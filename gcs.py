@@ -62,3 +62,19 @@ class Bucket(object):
         key = self.handle.blob(source)
         return key.exists()
 
+
+    def list(self, prefix=None):
+        for key in self.handle.list_blobs(prefix=prefix):
+            yield key
+
+
+    def size(self, source):
+        key = self.handle.get_blob(source)
+        return key.size if key is not None else 0
+
+
+    def is_public(self, source):
+        key = self.handle.get_blob(source)
+        if key is None:
+            return False
+        return 'READER' in key.acl.all().get_roles()

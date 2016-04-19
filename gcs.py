@@ -48,6 +48,8 @@ class Bucket(object):
 
     def get(self, source, target):
         key = self.handle.get_blob(source)
+        if key is None:
+            raise Exception("Object {} not exists in bucket {}.".format(source, self.handle.id))
         key.chunk_size = self.CHUNK_SIZE
         key.download_to_filename(target)
 

@@ -95,12 +95,12 @@ class Queue(BaseQueue):
         """
         now = time.time()
         # We have cached False response
-        if self.available_timestamp is not None and self.available_timestamp < now:
+        if self.available_timestamp is not None and now < self.available_timestamp:
             return False
 
         # Get oldestTask from queue stats
         exc = None
-        for _ in range(3):
+        for _ in range(6):
             try:
                 count = self.handle.count()
                 break

@@ -71,7 +71,7 @@ class Queue(BaseQueue):
         self.message = None
         if block and timeout is None:
             self.message = self.handle.reserve(timeout=timeout)
-        elif not block and not timeout is None:
+        elif not block and timeout is not None:
             self.message = self.handle.reserve(timeout=timeout)
         else:
             raise Exception('invalid arguments')
@@ -107,12 +107,12 @@ class Queue(BaseQueue):
         """
         now = time.time()
         # We have cached False response
-        if self.available_timestamp is not None and self.available_timestamp < now:
+        if self.available_timestamp is not None and now < self.available_timestamp:
             return False
 
         # Get oldestTask from queue stats
         exc = None
-        for _ in range(3):
+        for _ in range(6):
             try:
                 stats = self.handle.stats_tube(self.name)
                 break

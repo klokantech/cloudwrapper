@@ -1,5 +1,5 @@
 """
-Google Custom Metric.
+Google Custom Metric using API v2beta2.
 
 Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
 Author: Martin Mikita <martin.mikita@klokantech.com>
@@ -16,7 +16,19 @@ from googleapiclient.errors import HttpError
 
 from .gce import GoogleComputeEngine
 
-class GoogleCustomMetric(object):
+
+class GcmConnection(object):
+
+    def __init__(self):
+        self.credentials = GoogleCredentials.get_application_default()
+        self.client = build('cloudmonitoring', 'v2beta2', credentials=self.credentials)
+
+
+    def metric(self, name, projectId=None):
+        return Metric(name, projectId, self.client, self.credentials)
+
+
+class Metric(object):
 
     # This is the namespace for all custom metrics
     # CUSTOM_METRIC_DOMAIN = "custom.googleapis.com"
@@ -29,11 +41,8 @@ class GoogleCustomMetric(object):
         return dt.isoformat("T") + "Z"
 
 
-    def __init__(self, metricType, projectId=None):
-        self.metricType = metricType
-        credentials = GoogleCredentials.get_application_default()
-        #self.client = build('monitoring', 'v3', credentials=credentials)
-        self.client = build('cloudmonitoring', 'v2beta2', credentials=credentials)
+    def __init__(self, name, projectId, client, credentials):
+        self.metricType = name
         self.gce = GoogleComputeEngine()
         if projectId is None:
             #projectId = 'projects/' + self.gce.projectId()
@@ -46,6 +55,18 @@ class GoogleCustomMetric(object):
         self.points = []
         self.valueType = None
         self.metricKind = None
+        self.client = client
+        self.credentials = credentials
+
+
+    def _reconnect(self):
+        self.credentials = GoogleCredentials.get_application_default()
+        self.client = build('cloudmonitoring', 'v2beta2', credentials=self.credentials)
+        self.gce = GoogleComputeEngine()
+
+
+    def name(self):
+        return self.metricType
 
 
     def create(self, metricKind, valueType='DOUBLE', description='', displayName=None):
@@ -74,7 +95,9 @@ class GoogleCustomMetric(object):
 
         try:
             response = self.client.metricDescriptors().create(
-                project=self.projectId, body=metrics_descriptor).execute()
+                project=self.projectId,
+                body=metrics_descriptor
+            ).execute(num_retries=6)
         except Exception as e:
             raise Exception('Failed to create custom metric: {}'.format(e))
 
@@ -96,7 +119,7 @@ class GoogleCustomMetric(object):
                 # name='{}/metricDescriptors/{}/{}'.format(self.projectId,
                     # self.CUSTOM_METRIC_DOMAIN,
                     # self.metricType))
-            response = request.execute()
+            response = request.execute(num_retries=3)
             metric = None
             if 'metrics' in response:
                 for md in response['metrics']:
@@ -142,7 +165,7 @@ class GoogleCustomMetric(object):
                 # interval_endTime=self._format_rfc3339(endTime)
                 oldest=self._format_rfc3339(endTime)
             )
-            response = request.execute()
+            response = request.execute(num_retries=3)
             return response
         except:
             return []
@@ -238,16 +261,15 @@ class GoogleCustomMetric(object):
                 }
 
                 request = self.client.timeseries().write(
-                    project=self.projectId, body={"timeseries": [timeseries_data, ]})
-                request.execute()
+                    project=self.projectId,
+                    body={"timeseries": [timeseries_data, ]})
+                request.execute(num_retries=3)
                 self.points = []
                 return True
             except IOError as e:
                 if e.errno == errno.EPIPE:
+                    self._reconnect()
                     credentials = GoogleCredentials.get_application_default()
-                    #self.client = build('monitoring', 'v3', credentials=credentials)
-                    self.client = build('cloudmonitoring', 'v2beta2', credentials=credentials)
-                    self.gce = GoogleComputeEngine()
                 lastException = e
                 sleep(10)
         if lastException is not None:

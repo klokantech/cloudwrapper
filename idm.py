@@ -61,6 +61,7 @@ class Metric(object):
 
     def read(self, startTime=None, endTime=None, pageSize=10):
         # TODO
+        return []
         # try:
         #     if startTime is None:
         #         startTime = datetime.datetime.utcnow() - datetime.timedelta(minutes=30)
@@ -109,8 +110,8 @@ class Metric(object):
             'time': int(startTime.strftime('%s')),
             'measurement': self.metricName,
             'fields': {
-                'value': value
-            }
+                'value': value,
+            },
             'tags': tags
         })
 

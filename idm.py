@@ -16,7 +16,9 @@ from influxdb import InfluxDBClient
 class IdmConnection(object):
 
     def __init__(self, user, pswd, host='localhost', port=8086, db='metrics'):
-        self.client = InfluxDBClient(host, port, user, pswd, db)
+        self.host = host
+        self.port = int(port)
+        self.client = InfluxDBClient(self.host, self.port, user, pswd, db)
         self.client.create_database(db, if_not_exists=True)
 
 

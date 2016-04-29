@@ -20,10 +20,30 @@ class IdmConnection(object):
         self.port = int(port)
         self.client = InfluxDBClient(self.host, self.port, user, pswd, db)
         self.client.create_database(db, if_not_exists=True)
+        self.globalLabels = {}
+
+
+    def addGlobalLabel(self, name, value):
+        """
+        Add one label with value into global labels.
+        """
+        self.globalLabels[name] = value
+
+
+    def setGlobalLabels(self, labels, append=False):
+        """
+        Set global labels for this metric.
+
+        Default clear previous labels, unless append is True
+        """
+        if not append:
+            self.globalLabels = {}
+        self.globalLabels.update(labels)
 
 
     def metric(self, name):
-        return Metric(name, self.client)
+        return Metric(name, self.client, self.globalLabels.copy())
+
 
 
 class Metric(object):
@@ -36,7 +56,7 @@ class Metric(object):
         return dt.isoformat("T") + "Z"
 
 
-    def __init__(self, name, client):
+    def __init__(self, name, client, globalLabels=None):
         """
         Create Metric object with name, using client connection.
 
@@ -46,7 +66,9 @@ class Metric(object):
         self.client = client
         self.points = []
         self.my_hostname = socket.gethostname()
-        self.globalLabels = {}
+        if globalLabels is None:
+            globalLabels = {}
+        self.globalLabels = globalLabels
 
 
     def name(self):
@@ -144,7 +166,8 @@ class Metric(object):
         #     raise Exception('Datetime object is required as endTime!')
 
         self.points.append({
-            'time': int(startTime.strftime('%s')),
+            # Time requires nanoseconds since 1.1. 1970 UTC
+            # 'time': int(startTime.strftime('%s')),
             'measurement': self.metricName,
             'fields': {
                 'value': value,

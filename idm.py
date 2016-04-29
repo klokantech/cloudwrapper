@@ -129,9 +129,6 @@ class Metric(object):
         Label parameter doesn't use global labels
         Default value for startTime and endTime is time.now()
         """
-        if self.valueType is None:
-            # Read and save valueType
-            self.get()
 
         if startTime is None:
             startTime = datetime.datetime.utcnow()

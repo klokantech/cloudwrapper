@@ -29,17 +29,24 @@ class IdmConnection(object):
 class Metric(object):
 
     def _format_rfc3339(self, dt):
-        """Formats a datetime per RFC 3339.
-        :param dt: Datetime instanec to format, defaults to utcnow
+        """
+        Formats a datetime per RFC 3339.
+        :param dt: Datetime instance to format, defaults to utcnow
         """
         return dt.isoformat("T") + "Z"
 
 
     def __init__(self, name, client):
+        """
+        Create Metric object with name, using client connection.
+
+        Setup my_hostname used for each metric value in write() method
+        """
         self.metricName = name
         self.client = client
         self.points = []
         self.my_hostname = socket.gethostname()
+        self.globalLabels = {}
 
 
     def name(self):
@@ -57,11 +64,18 @@ class Metric(object):
 
 
     def has(self):
-        # Each metric exists all the time
+        """
+        Each metric exists all the time in Influx DB.
+        """
         return True
 
 
     def read(self, startTime=None, endTime=None, pageSize=10):
+        """
+        Read values for this metric.
+
+        To be implemented.
+        """
         # TODO
         return []
         # try:
@@ -90,7 +104,31 @@ class Metric(object):
         #     return []
 
 
-    def _addPoint(self, value, tags=None, startTime=None, endTime=None):
+    def addGlobalLabel(self, name, value):
+        """
+        Add one label with value into global labels.
+        """
+        self.globalLabels[name] = value
+
+
+    def setGlobalLabels(self, labels, append=False):
+        """
+        Set global labels for this metric.
+
+        Default clear previous labels, unless append is True
+        """
+        if not append:
+            self.globalLabels = {}
+        self.globalLabels.update(labels)
+
+
+    def _addPoint(self, value, labels=None, startTime=None, endTime=None):
+        """
+        Add one point value with optional labels.
+
+        Label parameter doesn't use global labels
+        Default value for startTime and endTime is time.now()
+        """
         if self.valueType is None:
             # Read and save valueType
             self.get()
@@ -100,8 +138,8 @@ class Metric(object):
         elif not isinstance(startTime, datetime):
             raise Exception('Datetime object is required as startTime!')
 
-        if tags is None:
-            tags = {}
+        if labels is None:
+            labels = {}
 
         # if endTime is None:
         #     endTime = datetime.datetime.utcnow()
@@ -114,21 +152,29 @@ class Metric(object):
             'fields': {
                 'value': value,
             },
-            'tags': tags
+            'tags': labels
         })
 
 
     def write(self, value, startTime=None, endTime=None, metricLabels=None):
+        """
+        Write one value into this metric.
+
+        Default value for startTime and endTime is time.now()
+        Each metric value has label with hostname of current machine
+        """
         # if len(self.points) == 0:
         #     raise Exception('Missing at least one point of metric to write!')
         self.points = []
 
-        if metricLabels is not None:
-            metricLabels.update({
+        labels = self.globalLabels.copy()
+        labels.update({
                 'hostname': self.my_hostname
             })
+        if metricLabels is not None:
+            labels.update(metricLabels)
 
-        self._addPoint(value, metricLabels, startTime, endTime)
+        self._addPoint(value, labels, startTime, endTime)
         lastException = None
         for _ in range(6):
             try:

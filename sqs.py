@@ -23,8 +23,10 @@ class SqsConnection(object):
             aws_access_key_id=key,
             aws_secret_access_key=secret)
 
+
     def queue(self, name):
         return Queue(self.connection.get_queue(name))
+
 
 
 class Queue(BaseQueue):
@@ -43,8 +45,10 @@ class Queue(BaseQueue):
         self.message = None
         self.available_timestamp = None
 
+
     def qsize(self):
         return self.handle.count()
+
 
     def put(self, item, block=True, timeout=None, delay=None):
         """Put item into the queue.
@@ -55,6 +59,7 @@ class Queue(BaseQueue):
         if not (block and timeout is None):
             raise Exception('block and timeout must have default values')
         self.handle.write(self.handle.new_message(item), delay_seconds=delay)
+
 
     def get(self, block=True, timeout=None):
         """Get item from the queue.
@@ -74,6 +79,7 @@ class Queue(BaseQueue):
         if self.message is None:
             raise Empty
         return self.message.get_body()
+
 
     def task_done(self):
         """Acknowledge that a formerly enqueued task is complete.

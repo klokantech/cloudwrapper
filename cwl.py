@@ -13,13 +13,14 @@ from boto.logs.exceptions import \
     ResourceAlreadyExistsException
 
 
-class CloudWatchLogsConnection(object):
+class CwlConnection(object):
 
     def __init__(self, region, key=None, secret=None):
         self.connection = connect_to_region(
             region,
             aws_access_key_id=key,
             aws_secret_access_key=secret)
+
 
     def handler(self, group, stream):
         try:
@@ -33,6 +34,7 @@ class CloudWatchLogsConnection(object):
         return Handler(self.connection, group, stream)
 
 
+
 class Handler(logging.Handler):
 
     def __init__(self, connection, group, stream, *args, **kwargs):
@@ -43,11 +45,13 @@ class Handler(logging.Handler):
         self.token = None
         self.events = []
 
+
     def emit(self, record):
         self.events.append({
             'timestamp': int(record.created * 1000),
             'message': self.format(record),
         })
+
 
     def flush(self):
         if not self.events:

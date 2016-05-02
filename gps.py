@@ -1,4 +1,4 @@
-"""Google Pub Sub using GCE Authentication.
+"""Google PubSub using GCE Authentication.
 
 Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
 Author: Martin Mikita <martin.mikita@klokantech.com>
@@ -17,7 +17,7 @@ from oauth2client.client import GoogleCredentials
 from .gce import GoogleComputeEngine
 
 
-class GpubsubConnection(object):
+class GpsConnection(object):
 
     def __init__(self):
         self.credentials = GoogleCredentials.get_application_default()
@@ -154,8 +154,18 @@ class Subscription(object):
         resp = self.handle.projects().subscription().acknowledge(
             subscription=self.subscriptionId,
             body=body).execute(num_retries=6)
-        if not resp:
-            self.message = None
+        # Response should be empty
+        if resp:
+            raise Exception(resp)
+        self.message = None
+
+
+    def task_done(self):
+        """Acknowledge that a formerly enqueued message is complete.
+
+        Note that this method MUST be called for each item.
+        """
+        self.acknowledge()
 
 
     def update(self, lease_time=600, msg=None):
@@ -174,7 +184,7 @@ class Subscription(object):
             body=body).execute(num_retries=6)
         # Response should be empty
         if resp:
-            raise(resp)
+            raise Exception(resp)
 
 
     def has_available(self):

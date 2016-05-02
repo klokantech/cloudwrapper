@@ -15,14 +15,17 @@ from oauth2client.client import GoogleCredentials
 
 from .gce import GoogleComputeEngine
 
-class GoogleLoggingConnection(object):
+
+class GclConnection(object):
 
     def __init__(self):
         credentials = GoogleCredentials.get_application_default()
         self.connection = build('logging', 'v2beta1', credentials=credentials)
 
+
     def handler(self, projectId, logId):
         return Handler(self.connection, projectId, logId)
+
 
 
 class Handler(logging.Handler):
@@ -52,6 +55,7 @@ class Handler(logging.Handler):
             'entries': [],
         }
 
+
     def emit(self, record):
         d = datetime.utcnow() # <-- get time in UTC
         self.entries.append({
@@ -59,6 +63,7 @@ class Handler(logging.Handler):
             'jsonPayload': json.loads(self.format(record)),
             'severity': record.levelname
         })
+
 
     def flush(self):
         if not self.entries:

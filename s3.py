@@ -17,8 +17,10 @@ class S3Connection(object):
             aws_access_key_id=key,
             aws_secret_access_key=secret)
 
+
     def bucket(self, name):
         return Bucket(self.connection.get_bucket(name))
+
 
 
 class Bucket(object):
@@ -27,6 +29,7 @@ class Bucket(object):
 
     def __init__(self, handle):
         self.handle = handle
+
 
     def put(self, source, target):
         key = self.handle.new_key(target)
@@ -46,6 +49,7 @@ class Bucket(object):
         except:
             multipart.cancel_upload()
             raise
+
 
     def get(self, source, target):
         key = self.handle.get_key(source, validate=False)

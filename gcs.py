@@ -10,10 +10,12 @@ import errno
 from time import sleep
 from gcloud import storage
 
+
 class GcsConnection(object):
 
     def __init__(self):
         self.connection = storage.Client()
+
 
     def bucket(self, name):
         for _ in range(6):
@@ -23,6 +25,7 @@ class GcsConnection(object):
                 if e.errno == errno.EPIPE:
                     self.connection = storage.Client()
                 sleep(10)
+
 
 
 class Bucket(object):

@@ -15,11 +15,12 @@ import time
 import beanstalkc
 
 
-class BtdConnection(object):
+class BtqConnection(object):
 
     def __init__(self, host='localhost', port=11300):
         self.host = host
         self.port = int(port)
+
 
     def queue(self, name):
         return Queue(beanstalkc.Connection(self.host, self.port), name)
@@ -47,11 +48,13 @@ class Queue(BaseQueue):
         self.message = None
         self.available_timestamp = None
 
+
     def qsize(self):
         """Get size of ready jobs in current tube
         """
         stats = self.handle.stats_tube(self.name)
         return stats['current-jobs-ready']
+
 
     def put(self, item, block=True, timeout=None, delay=0, ttr=3600, priority=beanstalkc.DEFAULT_PRIORITY):
         """Put item into the queue.
@@ -62,11 +65,12 @@ class Queue(BaseQueue):
         Default ttr (Time To Release) is 1 hour.
         """
         if not (block and timeout is None):
-            raise Exception('block and timeout must have default values')
+            raise Exception('BtqConnection::Queue::put() - Block and timeout must have default values.')
         self.handle.put(json.dumps(item), ttr=ttr, delay=delay, priority=priority)
 
+
     def get(self, block=True, timeout=None):
-        """Get item from the queue.
+        """Get an item from the queue.
         """
         self.message = None
         if block and timeout is None:
@@ -74,11 +78,12 @@ class Queue(BaseQueue):
         elif not block and timeout is not None:
             self.message = self.handle.reserve(timeout=timeout)
         else:
-            raise Exception('invalid arguments')
+            raise Exception('BtqConnection::Queue::get() - invalid arguments.')
 
         if self.message is None:
             raise Empty
         return json.loads(self.message.body)
+
 
     def task_done(self):
         """Acknowledge that a formerly enqueued task is complete.
@@ -87,16 +92,23 @@ class Queue(BaseQueue):
         See the class docstring for details.
         """
         if self.message is None:
-            raise Exception('no message to acknowledge')
+            raise Exception('BtqConnection::Queue::task_done() - no message to acknowledge.')
         self.message.delete()
         self.message = None
 
+
     def touch(self):
-        """Touch actual task to extend time to release
+        """Touch a formerly enqueued task to extend time to release
         """
         if self.message is None:
-            raise Exception('no message to acknowledge')
+            raise Exception('BtqConnection::Queue::touch() - no message to acknowledge.')
         self.message.touch()
+
+
+    def update(self):
+        """Update TTR (TimeToRelease) for a formerly enqueued task.
+        """
+        self.touch()
 
 
     def has_available(self):

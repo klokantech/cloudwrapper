@@ -9,11 +9,13 @@ import errno
 import base64
 import json
 
+from Queue import Empty
 from time import sleep
 from googleapiclient.discovery import build
 from oauth2client.client import GoogleCredentials
 
 from .gce import GoogleComputeEngine
+
 
 class GpubsubConnection(object):
 
@@ -56,6 +58,17 @@ class Topic(object):
             body=body).execute(num_retries=6)
 
 
+    def put(self, item, block=True, timeout=None, delay=None):
+        """Put item into the queue.
+
+        Note that PubSub doesn't implement non-blocking or timeouts for writes,
+        so both 'block' and 'timeout' must have their default values only.
+        """
+        if not (block and timeout is None):
+            raise Exception('GpubsubConnection::Topic::put() - Block and timeout must have default values.')
+        self.publish(item)
+
+
 
 class Subscription(object):
 
@@ -65,9 +78,12 @@ class Subscription(object):
         self.credentials = credentials
         self.projectId = projectId
         self.subscriptionId = 'projects/{}/subscriptions/{}'.format(self.projectId, name)
+        self.available_timestamp = None
 
 
     def list(self, maxCount=100):
+        """Pull list of messages (default 100) from the subscriber.
+        """
         body = {
             "returnImmediately": True,
             "maxMessages": maxCount,
@@ -81,4 +97,115 @@ class Subscription(object):
                 msg = message.get('message')
                 if msg:
                     yield json.loads( base64.b64decode( str(msg.get('data')) ) )
+
+
+    def _get_message(self, block=True):
+        """Internal pull one message from the subscriber.
+        """
+        body = {
+            "returnImmediately": not block,
+            "maxMessages": 1,
+        }
+        resp = self.handle.projects().subscription().pull(
+            subscription=self.subscriptionId,
+            body=body).execute(num_retries=6)
+        receivedMessages = resp.get('receivedMessages')
+        if receivedMessages is not None:
+            for message in receivedMessages:
+                msg = message.get('message')
+                if msg:
+                    return message
+        return None
+
+
+    def pull(self, block=True, timeout=None):
+        """Pull one message from the subscriber.
+        """
+        self.message = self._get_message(block)
+        if block:
+            while self.message is None:
+                sleep()
+                # Sleep at least 20 seconds before next message receive
+                sleep(timeout if timeout is not None else 20)
+                self.message = self._get_message(block)
+
+        if self.message is None:
+            raise Empty
+
+        return json.loads( base64.b64decode( str(self.message.get('message').get('data')) ) )
+
+
+    def get(self, block=True, timeout=None):
+        """Get (pull) one message from the subscriber.
+        """
+        self.pull(block=block, timeout=timeout)
+
+
+    def acknowledge(self):
+        """Acknowledge that a formerly enqueued message is complete.
+
+        Note that this method MUST be called for each item.
+        """
+        if self.message is None:
+            raise Exception('No message to acknowledge.')
+        body = {
+            "ackIds": [ self.message.get('ackId') ],
+        }
+        resp = self.handle.projects().subscription().acknowledge(
+            subscription=self.subscriptionId,
+            body=body).execute(num_retries=6)
+        if not resp:
+            self.message = None
+
+
+    def update(self, lease_time=600, msg=None):
+        """Update lease time for a formerly enqueued message.
+        """
+        if msg is None:
+            msg = self.message
+        if msg is None:
+            raise Exception('No message to update.')
+        body = {
+            "ackDeadlineSeconds": int(lease_time),
+            "ackIds": [ msg.get('ackId') ],
+        }
+        resp = self.handle.projects().subscription().modifyAckDeadline(
+            subscription=self.subscriptionId,
+            body=body).execute(num_retries=6)
+        # Response should be empty
+        if resp:
+            raise(resp)
+
+
+    def has_available(self):
+        """Is any message available for lease.
+
+        If there is no message, this state is cached internally for 5 minutes.
+        10 minutes is time used for Google Autoscaler.
+        """
+        now = time.time()
+        # We have cached False response
+        if self.available_timestamp is not None and now < self.available_timestamp:
+            return False
+
+        # Get oldestTask from queue stats
+        exc = None
+        for _ in range(6):
+            try:
+                msg = self._get_message(block=False)
+                break
+            except Exception as e:
+                exc = e
+                sleep(10)
+        else:
+            if exc is not None:
+                raise exc
+            return False
+        # There is at least one availabe task
+        if msg is not None:
+            self.update(lease_time=5, msg=msg)
+            return True
+        # No available task, cache this response for 5 minutes
+        self.available_timestamp = now + 300 # 5 minutes
+        return False
 

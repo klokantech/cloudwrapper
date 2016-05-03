@@ -106,7 +106,7 @@ class Subscription(object):
             "returnImmediately": not block,
             "maxMessages": 1,
         }
-        resp = self.handle.projects().subscription().pull(
+        resp = self.handle.projects().subscriptions().pull(
             subscription=self.subscriptionId,
             body=body).execute(num_retries=6)
         receivedMessages = resp.get('receivedMessages')
@@ -131,14 +131,17 @@ class Subscription(object):
 
         if self.message is None:
             raise Empty
+        data = self.message.get('message').get('data')
+        if not data:
+            raise Empty
 
-        return json.loads( base64.b64decode( str(self.message.get('message').get('data')) ) )
+        return json.loads( base64.b64decode( str(data) ) )
 
 
     def get(self, block=True, timeout=None):
         """Get (pull) one message from the subscriber.
         """
-        self.pull(block=block, timeout=timeout)
+        return self.pull(block=block, timeout=timeout)
 
 
     def acknowledge(self):
@@ -151,7 +154,7 @@ class Subscription(object):
         body = {
             "ackIds": [ self.message.get('ackId') ],
         }
-        resp = self.handle.projects().subscription().acknowledge(
+        resp = self.handle.projects().subscriptions().acknowledge(
             subscription=self.subscriptionId,
             body=body).execute(num_retries=6)
         # Response should be empty
@@ -179,7 +182,7 @@ class Subscription(object):
             "ackDeadlineSeconds": int(lease_time),
             "ackIds": [ msg.get('ackId') ],
         }
-        resp = self.handle.projects().subscription().modifyAckDeadline(
+        resp = self.handle.projects().subscriptions().modifyAckDeadline(
             subscription=self.subscriptionId,
             body=body).execute(num_retries=6)
         # Response should be empty
@@ -213,7 +216,7 @@ class Subscription(object):
             return False
         # There is at least one availabe task
         if msg is not None:
-            self.update(lease_time=5, msg=msg)
+            self.update(lease_time=2, msg=msg)
             return True
         # No available task, cache this response for 5 minutes
         self.available_timestamp = now + 300 # 5 minutes

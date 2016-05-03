@@ -62,6 +62,7 @@ class Queue(BaseQueue):
             return 0
         return int(taskqueue['stats']['totalTasks'])
 
+
     def put(self, item, block=True, timeout=None, delay=None):
         """Put item into the queue.
 
@@ -81,6 +82,7 @@ class Queue(BaseQueue):
             except GCloudError:
                 sleep(30)
 
+
     def _get_message(self, lease_time):
         """Get one message with lease_time
         """
@@ -95,6 +97,7 @@ class Queue(BaseQueue):
                 sleep(10)
             except GCloudError:
                 sleep(30)
+
 
     def get(self, block=True, timeout=None, lease_time=3600):
         """Get item from the queue.
@@ -114,6 +117,7 @@ class Queue(BaseQueue):
 
         return json.loads(self.message.description)
 
+
     def task_done(self):
         """Acknowledge that a formerly enqueued task is complete.
 
@@ -121,11 +125,29 @@ class Queue(BaseQueue):
         See the class docstring for details.
         """
         if self.message is None:
-            raise Exception('no message to acknowledge')
+            raise Exception('No message to acknowledge.')
         for _ in range(6):
             try:
                 self.message.delete(client=self.client)
                 self.message = None
+                break
+            except IOError as e:
+                if e.errno == errno.EPIPE:
+                    self.client = Client()
+                sleep(10)
+            except GCloudError:
+                sleep(30)
+
+
+    def update(self, lease_time=600):
+        """Update lease time for a formerly enqueued message.
+        """
+        msg = self.message
+        if msg is None:
+            raise Exception('No message to update.')
+        for _ in range(6):
+            try:
+                self.message.update(lease_time, client=self.client)
                 break
             except IOError as e:
                 if e.errno == errno.EPIPE:

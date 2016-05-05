@@ -23,11 +23,12 @@ class GdmConnection(object):
 
     def __init__(self):
         self.credentials = GoogleCredentials.get_application_default()
-        self.client = build('deploymentmanager', 'v2', credentials=self.credentials)
+        self.client_dm = build('deploymentmanager', 'v2', credentials=self.credentials)
+        self.client_ce = build('compute', 'v1', credentials=self.credentials)
 
 
     def deployment(self, name, projectId=None):
-        return Deployment(name, projectId, self.client, self.credentials)
+        return Deployment(name, projectId, self.client_dm, self.client_ce, self.credentials)
 
 
 class Deployment(object):
@@ -39,7 +40,7 @@ class Deployment(object):
         return dt.isoformat("T") + "Z"
 
 
-    def __init__(self, name, projectId, client, credentials):
+    def __init__(self, name, projectId, client_dm, client_ce, credentials):
         self.deploymentName = name
         self.gce = GoogleComputeEngine()
         if projectId is None:
@@ -49,8 +50,10 @@ class Deployment(object):
             projectId = projectId[10:]
         # elif 'projects/' not in projectId:
             # projectId = 'projects/' + projectId
+        self.zone = str(self.gce.instanceZone())
         self.projectId = projectId
-        self.client = client
+        self.client_dm = client_dm
+        self.client_ce = client_ce
         self.credentials = credentials
         self.resources = []
         self.imports = []
@@ -58,8 +61,13 @@ class Deployment(object):
 
     def _reconnect(self):
         self.credentials = GoogleCredentials.get_application_default()
-        self.client = build('deploymentmanager', 'v2', credentials=self.credentials)
+        self.client_dm = build('deploymentmanager', 'v2', credentials=self.credentials)
+        self.client_ce = build('compute', 'v1', credentials=self.credentials)
         self.gce = GoogleComputeEngine()
+
+
+    def setZone(self, zone):
+        self.zone = zone
 
 
     def name(self):
@@ -83,14 +91,14 @@ class Deployment(object):
                 deploymentState = self.get()
                 fingerprint = deploymentState.get('fingerprint')
                 body.update({"fingerprint": fingerprint})
-                response = self.client.deployments().update(
+                response = self.client_dm.deployments().update(
                     project=self.projectId,
                     deployment=self.deploymentName,
                     body=body,
                     preview=preview
                 ).execute(num_retries=6)
             else:
-                response = self.client.deployments().insert(
+                response = self.client_dm.deployments().insert(
                     project=self.projectId,
                     body=body,
                     preview=preview
@@ -103,7 +111,7 @@ class Deployment(object):
 
     def get(self):
         try:
-            request = self.client.deployments().get(
+            request = self.client_dm.deployments().get(
                 project=self.projectId,
                 deployment=self.deploymentName)
             response = request.execute(num_retries=6)
@@ -123,21 +131,30 @@ class Deployment(object):
         return True if response is not None else False
 
 
+    def delete(self):
+        try:
+            response = self.client_dm.deployments().delete(
+                project=self.projectId,
+                deployment=self.deploymentName
+            ).execute(num_retries=6)
+            return response
+        except Exception:
+            pass
+        return None
+
+
     def addResource(self, resource):
         self.resources.append(resource)
 
 
-    def addInstanceManagedGroup(self, name, template, description=None,
-        zone=None, targetSize=0):
-        if zone is None:
-            zone = str(self.gce.instanceZone())
+    def addInstanceManagedGroup(self, name, template, description=None, targetSize=0):
         properties = {
             "baseInstanceName": name,
             "instanceTemplate": "projects/{}/global/instanceTemplates/{}".format(
                 self.projectId, template),
             "name": name,
             "targetSize": targetSize,
-            "zone": zone
+            "zone": self.zone
         }
         resource = {
             "name": name,
@@ -148,7 +165,6 @@ class Deployment(object):
 
 
     def addInstanceManagedAutoscaler(self, name, groupName, numRange, coolDown=300, utilization=None):
-        zone = str(self.gce.instanceZone())
         if utilization is None:
             # Set default CPU utilization to 0.8 value
             utilization = {
@@ -158,13 +174,13 @@ class Deployment(object):
             }
         properties = {
             "target": "https://www.googleapis.com/compute/v1/projects/{}/zones/{}/instanceGroupManagers/{}".format(
-                self.projectId, zone, groupName),
+                self.projectId, self.zone, groupName),
             "autoscalingPolicy": {
                 "minNumReplicas": numRange[0],
                 "maxNumReplicas": numRange[1],
                 "coolDownPeriodSec": coolDown,
             },
-            "zone": zone
+            "zone": self.zone
         }
         properties["autoscalingPolicy"].update(utilization)
         resource = {
@@ -193,24 +209,15 @@ class Deployment(object):
         if not self.has():
             return 0
         try:
-            request = self.client.resources().get(
+            request = self.client_ce.instanceGroupManagers().get(
                 project=self.projectId,
-                deployment=self.deploymentName,
-                resource=groupName)
+                instanceGroupManager=groupName,
+                zone=self.zone)
             response = request.execute(num_retries=6)
         except HttpError as ex:
             if ex.resp.status == 404:
                 return 0
             raise
-        groupProperties = response.get('properties')
-        try:
-            groupState = yaml.load(groupProperties)
-        except Exception as ex:
-            raise ex
-        size = 0
-        try:
-            size = int(groupState.get('targetSize'))
-        except:
-            size = 0
+        size = int(response.get('targetSize'))
         return size
 

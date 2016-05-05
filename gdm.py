@@ -124,6 +124,7 @@ class Deployment(object):
 
 
     def has(self):
+        response = None
         try:
             response = self.get()
         except Exception:
@@ -191,7 +192,7 @@ class Deployment(object):
         self.addResource(resource)
 
 
-    def addInstanceManagedAutoscalerCustomMetric(self, name, groupName, numRange,
+    def addInstanceManagedAutoscalerMetric(self, name, groupName, numRange,
         metricName, metricTarget, metricTargetType, coolDown=300):
         utilization = {
             "customMetricUtilizations": [

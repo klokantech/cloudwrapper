@@ -79,13 +79,24 @@ class Deployment(object):
             "name": self.deploymentName
         }
         try:
-            response = self.client.deployments().insert(
-                project=self.projectId,
-                body=body,
-                preview=preview
-            ).execute(num_retries=6)
+            if self.has():
+                deploymentState = self.get()
+                fingerprint = deploymentState.get('fingerprint')
+                body.update({"fingerprint": fingerprint})
+                response = self.client.deployments().update(
+                    project=self.projectId,
+                    deployment=self.deploymentName,
+                    body=body,
+                    preview=preview
+                ).execute(num_retries=6)
+            else:
+                response = self.client.deployments().insert(
+                    project=self.projectId,
+                    body=body,
+                    preview=preview
+                ).execute(num_retries=6)
         except Exception as ex:
-            raise Exception('Failed to create deployment {}: {}'.format(self.deploymentName, ex))
+           raise Exception('Failed to create deployment {}: {}'.format(self.deploymentName, ex))
 
         return response
 
@@ -119,22 +130,25 @@ class Deployment(object):
     def addInstanceManagedGroup(self, name, template, description=None,
         zone=None, targetSize=0):
         if zone is None:
-            zone = self.gce.instanceZone()
+            zone = str(self.gce.instanceZone())
+        properties = {
+            "baseInstanceName": name,
+            "instanceTemplate": "projects/{}/global/instanceTemplates/{}".format(
+                self.projectId, template),
+            "name": name,
+            "targetSize": targetSize,
+            "zone": zone
+        }
         resource = {
-            "name": name + "-igm",
+            "name": name,
             "type": "compute.v1.instanceGroupManager",
-            "properties": {
-                "baseInstanceName": name,
-                "instanceTemplate": template,
-                "name": name,
-                "targetSize": targetSize,
-                "zone": zone
-            }
+            "properties": properties
         }
         self.addResource(resource)
 
 
     def addInstanceManagedAutoscaler(self, name, groupName, numRange, coolDown=300, utilization=None):
+        zone = str(self.gce.instanceZone())
         if utilization is None:
             # Set default CPU utilization to 0.8 value
             utilization = {
@@ -143,14 +157,16 @@ class Deployment(object):
                 }
             }
         properties = {
-            "target": groupName,
+            "target": "https://www.googleapis.com/compute/v1/projects/{}/zones/{}/instanceGroupManagers/{}".format(
+                self.projectId, zone, groupName),
             "autoscalingPolicy": {
                 "minNumReplicas": numRange[0],
                 "maxNumReplicas": numRange[1],
                 "coolDownPeriodSec": coolDown,
-            }
+            },
+            "zone": zone
         }
-        properties["autoscalingPolicy"].expend(utilization)
+        properties["autoscalingPolicy"].update(utilization)
         resource = {
             "name": name,
             "type": "compute.v1.autoscaler",
@@ -159,7 +175,7 @@ class Deployment(object):
         self.addResource(resource)
 
 
-    def addInstanceManagedAutoscalerCustom(self, name, groupName, numRange,
+    def addInstanceManagedAutoscalerCustomMetric(self, name, groupName, numRange,
         metricName, metricTarget, metricTargetType, coolDown=300):
         utilization = {
             "customMetricUtilizations": [
@@ -173,6 +189,28 @@ class Deployment(object):
         self.addInstanceManagedAutoscaler(name, groupName, numRange, coolDown, utilization)
 
 
-    # def runningInstances(self):
-
+    def runningInstances(self, groupName):
+        if not self.has():
+            return 0
+        try:
+            request = self.client.resources().get(
+                project=self.projectId,
+                deployment=self.deploymentName,
+                resource=groupName)
+            response = request.execute(num_retries=6)
+        except HttpError as ex:
+            if ex.resp.status == 404:
+                return 0
+            raise
+        groupProperties = response.get('properties')
+        try:
+            groupState = yaml.load(groupProperties)
+        except Exception as ex:
+            raise ex
+        size = 0
+        try:
+            size = int(groupState.get('targetSize'))
+        except:
+            size = 0
+        return size
 

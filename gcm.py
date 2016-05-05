@@ -69,6 +69,10 @@ class Metric(object):
         return self.metricType
 
 
+    def fullName(self):
+        return '{}/{}'.format(self.CUSTOM_METRIC_DOMAIN, self.metricType)
+
+
     def create(self, metricKind, valueType='DOUBLE', description='', displayName=None):
         if displayName is None:
             displayName = self.metricType.replace('/', ' ')

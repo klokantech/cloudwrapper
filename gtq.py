@@ -187,7 +187,9 @@ class Queue(BaseQueue):
                 raise exc
             return False
         # There is at least one availabe task
-        if float(taskqueue['stats']['oldestTask']) < now:
+        oldestTask = float(taskqueue['stats']['oldestTask'])
+        # If no tasks are available, this stat has value 0
+        if oldestTask > 0 and oldestTask < now:
             return True
         # No available task, cache this response for 5 minutes
         self.available_timestamp = now + 300 # 5 minutes

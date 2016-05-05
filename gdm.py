@@ -134,6 +134,11 @@ class Deployment(object):
 
     def delete(self):
         try:
+            deployment = self.get()
+            operation = deployment.get('operation')
+            # Skip delete action, if it is in progress
+            if operation and operation.get('operationType') == 'delete' and operation.get('status') == 'RUNNING':
+                return deployment
             response = self.client_dm.deployments().delete(
                 project=self.projectId,
                 deployment=self.deploymentName

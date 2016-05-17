@@ -82,3 +82,33 @@ class Handler(logging.Handler):
                 time.sleep(10)
             except Exception:
                 time.sleep(30)
+
+
+    def list(self, filter=None, orderAsc=True):
+        logFilter = []
+        logFilter.append('logName="projects/{}/logs/{}"'.format(self.projectId, self.logId))
+        if self.gce.isInstance():
+            logFilter.append('resource.type="gce_instance"')
+        if filter is not None:
+            logFilter.append('({})'.format(filter))
+        body = {
+            'orderBy': 'timestamp {}'.format('asc' if orderAsc else 'desc'),
+            'pageSize': 1000,
+            'filter': ' AND '.join(logFilter),
+            'projectIds': [
+                self.projectId
+            ]
+        }
+        req = self.connection.entries().list(body=body)
+        while req:
+            resp = req.execute(num_retries=6)
+            nextPageToken = str(resp.get('nextPageToken', ''))
+            entries = resp.get('entries', [])
+            for entry in entries:
+                payload = entry.get('jsonPayload', {})
+                yield payload
+            if len(nextPageToken) == 0:
+                break
+            body['pageToken'] = nextPageToken
+            req = self.connection.entries().list(body=body)
+

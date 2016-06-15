@@ -153,7 +153,7 @@ class Deployment(object):
         self.resources.append(resource)
 
 
-    def addInstanceManagedGroup(self, name, template, description=None, targetSize=0):
+    def addInstanceManagedGroup(self, name, template, description=None, targetSize=0, healthCheck=None):
         properties = {
             "baseInstanceName": name,
             "instanceTemplate": "projects/{}/global/instanceTemplates/{}".format(
@@ -162,6 +162,12 @@ class Deployment(object):
             "targetSize": targetSize,
             "zone": self.zone
         }
+        if healthCheck is not None:
+            properties["autoHealingPolicies"] = {
+                "initialDelaySec": 300,
+                "healthCheck": "projects/{}/global/{}".format(
+                    self.projectId, healthCheck)
+            }
         resource = {
             "name": name,
             "type": "compute.v1.instanceGroupManager",

@@ -170,7 +170,7 @@ class Deployment(object):
             }
         resource = {
             "name": name,
-            "type": "compute.v1.instanceGroupManager",
+            "type": "compute.beta.instanceGroupManager",
             "properties": properties
         }
         self.addResource(resource)

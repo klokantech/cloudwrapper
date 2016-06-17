@@ -163,11 +163,11 @@ class Deployment(object):
             "zone": self.zone
         }
         if healthCheck is not None:
-            properties["autoHealingPolicies"] = {
+            properties["autoHealingPolicies"] = [{
                 "initialDelaySec": 300,
                 "healthCheck": "projects/{}/global/{}".format(
                     self.projectId, healthCheck)
-            }
+            }]
         resource = {
             "name": name,
             "type": "compute.beta.instanceGroupManager",

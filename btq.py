@@ -39,21 +39,58 @@ class Queue(BaseQueue):
     def __init__(self, handle, name):
         self.handle = handle
         self.name = name
-        self.handle.use(self.name)
-        self.handle.watch(self.name)
+        self.message = None
+        self.available_timestamp = None
+
+        self.reconnectAttempts = 6
+        self.reconnectTimeout = 2
+
+        self._reconnect()
+
+
+    def _reconnect(self):
+        for _ in range(self.reconnectAttempts):
+            try:
+                self.handle.reconnect()
+                self.handle.use(self.name)
+                self.handle.watch(self.name)
+                break
+            except beanstalkc.SocketError:
+                sleep(self.reconnectTimeout)
+        else:
+            raise Exception('Cannot reconnect to the beanstalk server.')
         # Ignore others tubes
         for tube in self.handle.watching():
             if not self.name == tube:
                 self.handle.ignore(tube)
-        self.message = None
-        self.available_timestamp = None
+
+
+    def _wrap_handle(self, method, *args, **kwargs):
+        for _ in range(self.reconnectAttempts):
+            try:
+                return getattr(self.handle, method)(*args, **kwargs)
+            except IOError as e:
+                if e.errno == errno.EPIPE:
+                    sleep(self.reconnectTimeout)
+                    self._reconnect()
+            except beanstalkc.SocketError:
+                sleep(self.reconnectTimeout)
+                self._reconnect()
+        return None
+
+
+    def setReconnectOptions(self, attempts, timeout):
+        """Set reconnect options: number of attempts, timeout before reconnect [s]
+        """
+        self.reconnectAttempts = attempts
+        self.reconnectTimeout = timeout
 
 
     def qsize(self):
         """Get size of ready jobs in current tube
         """
-        stats = self.handle.stats_tube(self.name)
-        return stats['current-jobs-ready']
+        stats = self._wrap_handle('stats_tube', self.name)
+        return stats['current-jobs-ready'] if 'current-jobs-ready' in stats else 0
 
 
     def put(self, item, block=True, timeout=None, delay=0, ttr=3600, priority=beanstalkc.DEFAULT_PRIORITY):
@@ -66,20 +103,17 @@ class Queue(BaseQueue):
         """
         if not (block and timeout is None):
             raise Exception('BtqConnection::Queue::put() - Block and timeout must have default values.')
-        self.handle.put(json.dumps(item), ttr=ttr, delay=delay, priority=priority)
+        self._wrap_handle('put', json.dumps(item), ttr=ttr, delay=delay, priority=priority)
 
 
     def get(self, block=True, timeout=None):
         """Get an item from the queue.
         """
         self.message = None
-        if block and timeout is None:
-            self.message = self.handle.reserve(timeout=timeout)
-        elif not block and timeout is not None:
-            self.message = self.handle.reserve(timeout=timeout)
-        else:
+        if not( (block and timeout is None) or (not block and timeout is not None) ):
             raise Exception('BtqConnection::Queue::get() - invalid arguments.')
 
+        self.message = self._wrap_handle('reserve', timeout=timeout)
         if self.message is None:
             raise Empty
         return json.loads(self.message.body)
@@ -93,7 +127,7 @@ class Queue(BaseQueue):
         """
         if self.message is None:
             raise Exception('BtqConnection::Queue::task_done() - no message to acknowledge.')
-        self.message.delete()
+        self._wrap_handle('delete', self.message.jid)
         self.message = None
 
 
@@ -102,7 +136,7 @@ class Queue(BaseQueue):
         """
         if self.message is None:
             raise Exception('BtqConnection::Queue::touch() - no message to acknowledge.')
-        self.message.touch()
+        self._wrap_handle('touch', self.message.jid)
 
 
     def update(self):
@@ -124,19 +158,25 @@ class Queue(BaseQueue):
 
         # Get oldestTask from queue stats
         exc = None
-        for _ in range(6):
+        for _ in range(self.reconnectAttempts):
             try:
                 stats = self.handle.stats_tube(self.name)
                 break
             except IOError as e:
                 exc = e
-                sleep(10)
+                sleep(self.reconnectTimeout)
+                if e.errno == errno.EPIPE:
+                    self._reconnect()
+            except SocketError as e:
+                exc = e
+                sleep(self.reconnectTimeout)
+                self._reconnect()
         else:
             if exc is not None:
                 raise exc
             return False
         # There is at least one availabe task
-        if int(stats['current-jobs-ready']) > 0:
+        if int(stats['current-jobs-ready'] if 'current-jobs-ready' in stats else 0) > 0:
             return True
         # No available task, cache this response for 5 minutes
         self.available_timestamp = now + 300 # 5 minutes

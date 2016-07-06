@@ -2,10 +2,11 @@
 
 Wrappers around cloud services for Amazon, Google and private cloud.
 
-Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
-Maintainer: Martin Mikita, martin.mikita@klokantech.com
+**Copyright**: (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
 
-Modules:
+**Maintainer**: Martin Mikita, martin.mikita@klokantech.com
+
+## Modules
 
  - Amazon cloud services:
    - *s3*: Amazon S3 storage.

@@ -113,8 +113,8 @@ class Metric(object):
             )
             response = request.execute(num_retries=3)
             metric = None
-            if response is not None and 'name' in response and
-                response['name'] == '{}/{}'.format(self.CUSTOM_METRIC_DOMAIN, self.metricType):
+            if (response is not None and 'name' in response and
+                response['name'] == '{}/{}'.format(self.CUSTOM_METRIC_DOMAIN, self.metricType)):
                 metric = response
             else:
                 #raise Exception('Failed to get custom metric {}: {}'.format(self.metricType, str(response)))

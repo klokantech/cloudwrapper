@@ -37,7 +37,7 @@ setup(
         'boto==2.39.0',
         'requests==2.9.1',
         'gcloud==0.13.0',
-        'beanstalkc==0.4.0',
+        'https://github.com/earl/beanstalkc/archive/master.zip',
         'oauth2client==2.0.2',
         'google-api-python-client==1.5.0',
         'gcloud_taskqueue==0.1.2',

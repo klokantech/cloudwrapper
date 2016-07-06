@@ -4,7 +4,12 @@ Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
 Author: Martin Mikita <martin.mikita@klokantech.com>
 """
 
-from Queue import Empty
+import sys
+
+if sys.version[0] == '2':
+    from Queue import Empty
+else:
+    from queue import Empty
 
 from time import sleep
 

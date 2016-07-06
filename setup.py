@@ -43,6 +43,6 @@ setup(
         'pyyaml==3.11',
     ],
     dependency_links=[
-        'https://github.com/earl/beanstalkc/archive/master.zip',
+        'https://github.com/earl/beanstalkc/tarball/master#egg=package-0.4.1',
     ],
 )

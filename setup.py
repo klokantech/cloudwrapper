@@ -41,8 +41,9 @@ setup(
         'google-api-python-client==1.5.0',
         'gcloud_taskqueue==0.1.2',
         'pyyaml==3.11',
+        'beanstalkc==0.4.1beta',
     ],
     dependency_links=[
-        'https://github.com/earl/beanstalkc/tarball/master#egg=package-0.4.1',
+        'https://github.com/earl/beanstalkc/tarball/master#egg=beanstalkc-0.4.1beta',
     ],
 )

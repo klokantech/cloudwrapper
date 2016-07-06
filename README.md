@@ -29,7 +29,11 @@ Modules:
 
 ## Install
 
+*WARNING*: Cloudwrapper uses new `requests` module, while old `pip` (from apt-get on Ubuntu 14.04, Debian 8) requires older `requests` module.
+
+
 ```bash
-apt-get install python-setuptools python-pip
+apt-get install python-setuptools
+easy_install pip
 pip install https://github.com/klokantech/cloudwrapper/archive/master.zip
 ```

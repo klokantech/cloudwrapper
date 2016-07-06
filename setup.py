@@ -41,5 +41,6 @@ setup(
         'oauth2client==2.0.2',
         'google-api-python-client==1.5.0',
         'gcloud_taskqueue==0.1.2',
+        'pyyaml==3.11',
     ],
 )

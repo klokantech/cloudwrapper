@@ -30,5 +30,6 @@ Modules:
 ## Install
 
 ```bash
+apt-get install python-setuptools python-pip
 pip install https://github.com/klokantech/cloudwrapper/archive/master.zip
 ```

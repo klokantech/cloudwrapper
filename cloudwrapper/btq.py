@@ -8,8 +8,10 @@ import sys
 
 if sys.version[0] == '2':
     from Queue import Empty
+    from beanstalkc import Connection, SocketError, DEFAULT_PRIORITY
 else:
     from queue import Empty
+    from pystalkd.Beanstalkd import Connection, SocketError, DEFAULT_PRIORITY
 
 from time import sleep
 
@@ -17,7 +19,6 @@ from .base import BaseQueue
 
 import json
 import time
-import beanstalkc
 
 
 class BtqConnection(object):
@@ -28,7 +29,7 @@ class BtqConnection(object):
 
 
     def queue(self, name):
-        return Queue(beanstalkc.Connection(self.host, self.port), name)
+        return Queue(Connection(self.host, self.port), name)
 
 
 class Queue(BaseQueue):
@@ -60,7 +61,7 @@ class Queue(BaseQueue):
                 self.handle.use(self.name)
                 self.handle.watch(self.name)
                 break
-            except beanstalkc.SocketError:
+            except SocketError:
                 sleep(self.reconnectTimeout)
         else:
             raise Exception('Cannot reconnect to the beanstalk server.')
@@ -78,7 +79,7 @@ class Queue(BaseQueue):
                 if e.errno == errno.EPIPE:
                     sleep(self.reconnectTimeout)
                     self._reconnect()
-            except beanstalkc.SocketError:
+            except SocketError:
                 sleep(self.reconnectTimeout)
                 self._reconnect()
         return None
@@ -98,7 +99,7 @@ class Queue(BaseQueue):
         return stats['current-jobs-ready'] if 'current-jobs-ready' in stats else 0
 
 
-    def put(self, item, block=True, timeout=None, delay=0, ttr=3600, priority=beanstalkc.DEFAULT_PRIORITY):
+    def put(self, item, block=True, timeout=None, delay=0, ttr=3600, priority=DEFAULT_PRIORITY):
         """Put item into the queue.
 
         Note that BeansTalkc doesn't implement non-blocking or timeouts for writes,

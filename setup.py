@@ -18,6 +18,21 @@ if sys.version_info > (3,):
 with open('README.md', **open_kwds) as f:
     readme = f.read()
 
+install_requires = [
+    'boto==2.39.0',
+    'requests==2.9.1',
+    'gcloud==0.13.0',
+    'oauth2client==2.0.2',
+    'google-api-python-client==1.5.0',
+    'gcloud_taskqueue==0.1.2',
+    'pyyaml==3.11',
+]
+
+if sys.version_info >= (3,0):
+    install_requires.append('pystalkd==1.2.3')
+else:
+    install_requires.append('beanstalkc==0.4.0')
+
 setup(
     name='cloudwrapper',
     version=cloudwrapper.__version__,
@@ -33,17 +48,5 @@ setup(
     license='Copyright 2016 Klokan Technologies GmbH',
     packages=find_packages(exclude=[]),
     include_package_data=True,
-    install_requires=[
-        'boto==2.39.0',
-        'requests==2.9.1',
-        'gcloud==0.13.0',
-        'oauth2client==2.0.2',
-        'google-api-python-client==1.5.0',
-        'gcloud_taskqueue==0.1.2',
-        'pyyaml==3.11',
-        'beanstalkc==0.4.1beta',
-    ],
-    dependency_links=[
-        'https://github.com/earl/beanstalkc/tarball/master#egg=beanstalkc-0.4.1beta',
-    ],
+    install_requires=install_requires,
 )

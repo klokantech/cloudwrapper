@@ -26,12 +26,13 @@ install_requires = [
     'google-api-python-client==1.5.0',
     'gcloud_taskqueue==0.1.2',
     'pyyaml==3.11',
+    'beanstalkc3==0.4.0'
 ]
 
-if sys.version_info >= (3,0):
-    install_requires.append('pystalkd==1.2.3')
-else:
-    install_requires.append('beanstalkc==0.4.0')
+# if sys.version_info >= (3,0):
+#     install_requires.append('pystalkd==1.2.3')
+# else:
+#     install_requires.append('beanstalkc==0.4.0')
 
 setup(
     name='cloudwrapper',

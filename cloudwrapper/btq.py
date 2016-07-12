@@ -8,12 +8,10 @@ import sys
 
 if sys.version[0] == '2':
     from Queue import Empty
-    from beanstalkc import Connection, SocketError, DEFAULT_PRIORITY
 else:
     from queue import Empty
-    # from pystalkd.Beanstalkd import Connection, SocketError, DEFAULT_PRIORITY
-    from beanstalkc import Connection, SocketError, DEFAULT_PRIORITY
 
+from beanstalkc import Connection, SocketError, DEFAULT_PRIORITY
 from time import sleep
 
 from .base import BaseQueue

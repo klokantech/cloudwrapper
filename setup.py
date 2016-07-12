@@ -29,11 +29,6 @@ install_requires = [
     'beanstalkc3==0.4.0'
 ]
 
-# if sys.version_info >= (3,0):
-#     install_requires.append('pystalkd==1.2.3')
-# else:
-#     install_requires.append('beanstalkc==0.4.0')
-
 setup(
     name='cloudwrapper',
     version=cloudwrapper.__version__,

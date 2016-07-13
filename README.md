@@ -54,3 +54,18 @@ apt-get install python3-setuptools
 easy_install3 pip
 pip3 install https://github.com/klokantech/cloudwrapper/archive/master.zip
 ```
+
+
+## Usage example
+
+### BeansTalkd Queues
+
+```python
+from cloudwrapper.btq import BtqConnection
+
+btq = BtqConnection('172.17.0.2', 11300)  # host, port
+
+q = btq.queue('test')  # get test queue object
+
+print (q.qsize())  # print size of the queue test
+```

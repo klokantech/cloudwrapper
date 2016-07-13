@@ -71,32 +71,32 @@ class Queue(BaseQueue):
         """
         if not (block and timeout is None):
             raise Exception('block and timeout must have default values')
-        for _ in range(6):
+        for _repeat in range(6):
             try:
                 self.handle.insert_task(description=json.dumps(item), client=self.client)
                 break
             except IOError as e:
+                sleep(_repeat * 2 + 1)
                 if e.errno == errno.EPIPE:
                     self.client = Client()
-                sleep(10)
             except GCloudError:
-                sleep(30)
+                sleep(_repeat * 2 + 5)
 
 
     def _get_message(self, lease_time):
         """Get one message with lease_time
         """
-        for _ in range(6):
+        for _repeat in range(6):
             try:
                 for task in self.handle.lease(lease_time=lease_time, num_tasks=1, client=self.client):
                     return task
                 return None
             except IOError as e:
+                sleep(_repeat * 2 + 1)
                 if e.errno == errno.EPIPE:
                     self.client = Client()
-                sleep(10)
             except GCloudError:
-                sleep(30)
+                sleep(_repeat * 2 + 5)
 
 
     def get(self, block=True, timeout=None, lease_time=3600):
@@ -126,17 +126,17 @@ class Queue(BaseQueue):
         """
         if self.message is None:
             raise Exception('No message to acknowledge.')
-        for _ in range(6):
+        for _repeat in range(6):
             try:
                 self.message.delete(client=self.client)
                 self.message = None
                 break
             except IOError as e:
+                sleep(_repeat * 2 + 1)
                 if e.errno == errno.EPIPE:
                     self.client = Client()
-                sleep(10)
             except GCloudError:
-                sleep(30)
+                sleep(_repeat * 2 + 5)
 
 
     def update(self, lease_time=600):
@@ -145,16 +145,16 @@ class Queue(BaseQueue):
         msg = self.message
         if msg is None:
             raise Exception('No message to update.')
-        for _ in range(6):
+        for _repeat in range(6):
             try:
                 self.message.update(lease_time, client=self.client)
                 break
             except IOError as e:
+                sleep(_repeat * 2 + 1)
                 if e.errno == errno.EPIPE:
                     self.client = Client()
-                sleep(10)
             except GCloudError:
-                sleep(30)
+                sleep(_repeat * 2 + 5)
 
 
     def has_available(self):
@@ -170,18 +170,18 @@ class Queue(BaseQueue):
 
         # Get oldestTask from queue stats
         exc = None
-        for _ in range(6):
+        for _repeat in range(6):
             try:
                 taskqueue = self.handle_api.taskqueues().get(project=self.handle.project, taskqueue=self.handle.id, getStats=True).execute()
                 break
             except IOError as e:
                 exc = e
+                sleep(_repeat * 2 + 1)
                 if e.errno == errno.EPIPE:
                     self._reconnect()
-                sleep(10)
             except Exception as e:
                 exc = e
-                sleep(10)
+                sleep(_repeat * 2 + 1)
         else:
             if exc is not None:
                 raise exc

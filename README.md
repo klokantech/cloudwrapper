@@ -40,6 +40,7 @@ https://github.com/klokantech/cloudwrapper/archive/master.zip
 
 ### Versions
 
+ - v1.1 : `https://github.com/klokantech/cloudwrapper/archive/v1.1.zip`
  - v1.0 : `https://github.com/klokantech/cloudwrapper/archive/v1.0.zip`
 
 

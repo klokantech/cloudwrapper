@@ -32,9 +32,25 @@ Wrappers around cloud services for Amazon, Google and private cloud.
 
 *WARNING*: Cloudwrapper uses new `requests` module, while old `pip` (from apt-get on Ubuntu 14.04, Debian 8) requires older `requests` module.
 
+URL for master (latest) version:
+
+```
+https://github.com/klokantech/cloudwrapper/archive/master.zip
+```
+
+
+### Python2
 
 ```bash
 apt-get install python-setuptools
 easy_install pip
 pip install https://github.com/klokantech/cloudwrapper/archive/master.zip
+```
+
+### Python3
+
+```bash
+apt-get install python3-setuptools
+easy_install3 pip
+pip3 install https://github.com/klokantech/cloudwrapper/archive/master.zip
 ```

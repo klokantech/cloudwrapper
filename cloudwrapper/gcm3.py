@@ -222,7 +222,7 @@ class Metric(object):
         self._addPoint(value, startTime, endTime)
 
         lastException = None
-        for _ in range(6):
+        for _repeat in range(6):
             try:
                 metricLabels.update({
                     'compute.googleapis.com/resource_id': self.gce.instanceId()
@@ -256,11 +256,11 @@ class Metric(object):
                 self.points = []
                 return True
             except IOError as e:
+                sleep(_repeat * 2 + 1)
                 if e.errno == errno.EPIPE:
                     self._reconnect()
                     credentials = GoogleCredentials.get_application_default()
                 lastException = e
-                sleep(10)
         if lastException is not None:
             raise lastException
 

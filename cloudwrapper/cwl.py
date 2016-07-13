@@ -56,7 +56,7 @@ class Handler(logging.Handler):
     def flush(self):
         if not self.events:
             return
-        for _ in range(6):
+        for _repeat in range(6):
             try:
                 try:
                     response = self.connection.put_log_events(
@@ -69,4 +69,4 @@ class Handler(logging.Handler):
                 self.events = []
                 break
             except Exception:
-                time.sleep(30)
+                time.sleep(_repeat * 2 + 5)

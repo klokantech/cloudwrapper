@@ -54,14 +54,14 @@ class Queue(BaseQueue):
 
 
     def _reconnect(self):
-        for _ in range(self.reconnectAttempts):
+        for _repeat in range(self.reconnectAttempts):
             try:
                 self.handle.reconnect()
                 self.handle.use(self.name)
                 self.handle.watch(self.name)
                 break
             except SocketError:
-                sleep(self.reconnectTimeout)
+                sleep(_repeat * self.reconnectTimeout + 1)
         else:
             raise Exception('Cannot reconnect to the beanstalk server.')
         # Ignore others tubes
@@ -71,15 +71,15 @@ class Queue(BaseQueue):
 
 
     def _wrap_handle(self, method, *args, **kwargs):
-        for _ in range(self.reconnectAttempts):
+        for _repeat in range(self.reconnectAttempts):
             try:
                 return getattr(self.handle, method)(*args, **kwargs)
             except IOError as e:
                 if e.errno == errno.EPIPE:
-                    sleep(self.reconnectTimeout)
+                    sleep(_repeat * self.reconnectTimeout + 1)
                     self._reconnect()
             except SocketError:
-                sleep(self.reconnectTimeout)
+                sleep(_repeat * self.reconnectTimeout + 1)
                 self._reconnect()
         return None
 
@@ -163,18 +163,18 @@ class Queue(BaseQueue):
 
         # Get oldestTask from queue stats
         exc = None
-        for _ in range(self.reconnectAttempts):
+        for _repeat in range(self.reconnectAttempts):
             try:
                 stats = self.handle.stats_tube(self.name)
                 break
             except IOError as e:
                 exc = e
-                sleep(self.reconnectTimeout)
+                sleep(_repeat * self.reconnectTimeout + 1)
                 if e.errno == errno.EPIPE:
                     self._reconnect()
             except SocketError as e:
                 exc = e
-                sleep(self.reconnectTimeout)
+                sleep(_repeat * self.reconnectTimeout + 1)
                 self._reconnect()
         else:
             if exc is not None:

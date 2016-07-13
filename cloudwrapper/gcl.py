@@ -68,7 +68,7 @@ class Handler(logging.Handler):
     def flush(self):
         if not self.entries:
             return
-        for _ in range(6):
+        for _repeat in range(6):
             try:
                 self.body['entries'] = self.entries
                 resp = self.connection.entries().write(
@@ -76,12 +76,12 @@ class Handler(logging.Handler):
                 self.entries = []
                 break
             except IOError as e:
+                time.sleep(_repeat * 2 + 1)
                 if e.errno == errno.EPIPE:
                     credentials = GoogleCredentials.get_application_default()
                     self.connection = build('logging', 'v2beta1', credentials=credentials)
-                time.sleep(10)
             except Exception:
-                time.sleep(30)
+                time.sleep(_repeat * 2 + 5)
 
 
     def list(self, filter=None, orderAsc=True):

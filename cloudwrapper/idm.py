@@ -196,14 +196,14 @@ class Metric(object):
 
         self._addPoint(value, labels, startTime, endTime)
         lastException = None
-        for _ in range(6):
+        for _repeat in range(6):
             try:
                 self.client.write_points( self.points )
                 self.points = []
                 return True
             except IOError as e:
+                sleep(_repeat * 2 + 1)
                 lastException = e
-                sleep(10)
         if lastException is not None:
             raise lastException
 

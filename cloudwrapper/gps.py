@@ -203,13 +203,13 @@ class Subscription(object):
 
         # Get oldestTask from queue stats
         exc = None
-        for _ in range(6):
+        for _repeat in range(6):
             try:
                 msg = self._get_message(block=False)
                 break
             except Exception as e:
+                sleep(_repeat * 2 + 1)
                 exc = e
-                sleep(10)
         else:
             if exc is not None:
                 raise exc

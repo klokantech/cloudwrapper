@@ -106,13 +106,13 @@ class Queue(BaseQueue):
 
         # Get oldestTask from queue stats
         exc = None
-        for _ in range(6):
+        for _repeat in range(6):
             try:
                 count = self.handle.count()
                 break
             except IOError as e:
+                sleep(_repeat * 2 + 1)
                 exc = e
-                sleep(10)
         else:
             if exc is not None:
                 raise exc

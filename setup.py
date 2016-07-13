@@ -3,13 +3,6 @@ import sys
 
 import cloudwrapper
 
-with open('cloudwrapper/__init__.py') as f:
-    for line in f:
-        if line.find("__version__") >= 0:
-            version = line.split("=")[1].strip()
-            version = version.strip('"')
-            version = version.strip("'")
-            continue
 
 open_kwds = {}
 if sys.version_info > (3,):

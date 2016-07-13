@@ -26,4 +26,4 @@ idm -- Influx DB Metric.
 
 """
 
-__version__ = '1.0'
+__version__ = '1.1'

@@ -38,6 +38,11 @@ URL for master (latest) version:
 https://github.com/klokantech/cloudwrapper/archive/master.zip
 ```
 
+### Versions
+
+ - v1.0 : `https://github.com/klokantech/cloudwrapper/archive/v1.0.zip`
+
+
 
 ### Python2
 

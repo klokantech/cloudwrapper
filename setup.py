@@ -23,7 +23,7 @@ install_requires = [
     'requests==2.9.1',
     'gcloud==0.13.0',
     'oauth2client==2.0.2',
-    'google-api-python-client==1.5.0',
+    'google-api-python-client==1.5.1',
     'gcloud_taskqueue==0.1.2',
     'pyyaml==3.11',
     'beanstalkc3==0.4.0'

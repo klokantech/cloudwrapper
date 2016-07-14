@@ -16,6 +16,7 @@ from time import sleep, time
 from .base import BaseQueue
 
 try:
+    import yaml
     from beanstalkc import Connection, SocketError, DEFAULT_PRIORITY
 except ImportError:
     from warnings import warn

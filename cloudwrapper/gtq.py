@@ -4,19 +4,33 @@ Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
 Author: Martin Mikita <martin.mikita@klokantech.com>
 """
 
-from Queue import Empty
-
-from time import sleep
-from gcloud_taskqueue import Taskqueue, Client
-from gcloud.exceptions import GCloudError
-from googleapiclient.discovery import build
-from oauth2client.client import GoogleCredentials
-
-from .base import BaseQueue
-
 import json
 import errno
-import time
+import sys
+
+if sys.version[0] == '2':
+    from Queue import Empty
+else:
+    from queue import Empty
+
+from time import sleep, time
+try:
+    from gcloud_taskqueue import Taskqueue, Client
+    from gcloud.exceptions import GCloudError
+    from googleapiclient.discovery import build
+    from oauth2client.client import GoogleCredentials
+except ImportError:
+    from warnings import warn
+    install_modules = [
+        'gcloud_taskqueue==0.1.2',
+        'gcloud==0.13.0',
+        'google-api-python-client==1.5.1',
+        'oauth2client==2.0.2',
+    ]
+    warn('cloudwrapper.gtq requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
+    raise
+
+from .base import BaseQueue
 
 
 class GtqConnection(object):
@@ -163,7 +177,7 @@ class Queue(BaseQueue):
         If there is no message, this state is cached internally for 5 minutes.
         10 minutes is time used for Google Autoscaler.
         """
-        now = time.time()
+        now = time()
         # We have cached False response
         if self.available_timestamp is not None and now < self.available_timestamp:
             return False

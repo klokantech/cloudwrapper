@@ -11,7 +11,16 @@ import datetime
 import socket
 
 from time import sleep
-from influxdb import InfluxDBClient
+
+try:
+    from influxdb import InfluxDBClient
+except ImportError:
+    from warnings import warn
+    install_modules = [
+        'influxdb==3.0.0',
+    ]
+    warn('cloudwrapper.idm requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
+    raise
 
 class IdmConnection(object):
 

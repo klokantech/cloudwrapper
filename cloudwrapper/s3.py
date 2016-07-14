@@ -6,7 +6,15 @@ Author: Vaclav Klusak <vaclav.klusak@klokantech.com>
 
 import os
 
-from boto.s3 import connect_to_region
+try:
+    from boto.s3 import connect_to_region
+except ImportError:
+    from warnings import warn
+    install_modules = [
+        'boto==2.39.0',
+    ]
+    warn('cloudwrapper.s3 requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
+    raise
 
 
 class S3Connection(object):

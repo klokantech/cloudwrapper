@@ -12,15 +12,28 @@ with open('README.md', **open_kwds) as f:
     readme = f.read()
 
 install_requires = [
-    'boto==2.39.0',
-    'requests==2.9.1',
-    'gcloud==0.13.0',
-    'oauth2client==2.0.2',
-    'google-api-python-client==1.5.1',
-    'gcloud_taskqueue==0.1.2',
-    'pyyaml==3.11',
-    'beanstalkc3==0.4.0'
 ]
+
+extras_requires = {
+    'amazon': [
+        'boto==2.39.0',
+    ],
+    'google': [
+        'requests==2.9.1',
+        'gcloud==0.13.0',
+        'oauth2client==2.0.2',
+        'google-api-python-client==1.5.1',
+        'gcloud_taskqueue==0.1.2',
+        'pyyaml==3.11',
+    ],
+    'beanstalkd': [
+        'pyyaml==3.11',
+        'beanstalkc3==0.4.0'
+    ],
+    'influxdb': [
+        'influxdb==3.0.0',
+    ]
+}
 
 setup(
     name='cloudwrapper',
@@ -38,4 +51,5 @@ setup(
     packages=find_packages(exclude=[]),
     include_package_data=True,
     install_requires=install_requires,
+    extras_requires=extras_requires,
 )

@@ -4,6 +4,7 @@ Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
 Author: Martin Mikita <martin.mikita@klokantech.com>
 """
 
+import json
 import sys
 
 if sys.version[0] == '2':
@@ -11,13 +12,19 @@ if sys.version[0] == '2':
 else:
     from queue import Empty
 
-from beanstalkc import Connection, SocketError, DEFAULT_PRIORITY
-from time import sleep
-
+from time import sleep, time
 from .base import BaseQueue
 
-import json
-import time
+try:
+    from beanstalkc import Connection, SocketError, DEFAULT_PRIORITY
+except ImportError:
+    from warnings import warn
+    install_modules = [
+        'beanstalkc3==0.4.0',
+        'pyyaml==3.11',
+    ]
+    warn('cloudwrapper.btq requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
+    raise
 
 
 class BtqConnection(object):
@@ -156,7 +163,7 @@ class Queue(BaseQueue):
         If there is no message, this state is cached internally for 5 minutes.
         10 minutes is time used for Google Autoscaler.
         """
-        now = time.time()
+        now = time()
         # We have cached False response
         if self.available_timestamp is not None and now < self.available_timestamp:
             return False

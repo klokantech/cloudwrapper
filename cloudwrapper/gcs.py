@@ -8,7 +8,16 @@ import os
 import errno
 
 from time import sleep
-from gcloud import storage
+
+try:
+    from gcloud import storage
+except ImportError:
+    from warnings import warn
+    install_modules = [
+        'gcloud==0.13.0',
+    ]
+    warn('cloudwrapper.gcs requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
+    raise
 
 
 class GcsConnection(object):

@@ -7,10 +7,18 @@ Author: Vaclav Klusak <vaclav.klusak@klokantech.com>
 import logging
 import time
 
-from boto.logs import connect_to_region
-from boto.logs.exceptions import \
-    InvalidSequenceTokenException, \
-    ResourceAlreadyExistsException
+try:
+    from boto.logs import connect_to_region
+    from boto.logs.exceptions import \
+        InvalidSequenceTokenException, \
+        ResourceAlreadyExistsException
+except ImportError:
+    from warnings import warn
+    install_modules = [
+        'boto==2.39.0',
+    ]
+    warn('cloudwrapper.cwl requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
+    raise
 
 
 class CwlConnection(object):

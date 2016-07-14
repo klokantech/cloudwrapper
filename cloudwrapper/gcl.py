@@ -5,13 +5,24 @@ Author: Martin Mikita <martin.mikita@klokantech.com>
 """
 
 import logging
-import time
 import json
 import errno
 
+from time import sleep
 from datetime import datetime
-from googleapiclient.discovery import build
-from oauth2client.client import GoogleCredentials
+
+try:
+    from googleapiclient.discovery import build
+    from oauth2client.client import GoogleCredentials
+except ImportError:
+    from warnings import warn
+    install_modules = [
+        'google-api-python-client==1.5.1',
+        'oauth2client==2.0.2',
+        'requests==2.9.1',
+    ]
+    warn('cloudwrapper.gcl requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
+    raise
 
 from .gce import GoogleComputeEngine
 

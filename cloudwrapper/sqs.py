@@ -4,15 +4,26 @@ Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
 Author: Vaclav Klusak <vaclav.klusak@klokantech.com>
 """
 
-from Queue import Empty
+import sys
 
-from boto.sqs import connect_to_region
-from boto.sqs.jsonmessage import JSONMessage
-from time import sleep
+if sys.version[0] == '2':
+    from Queue import Empty
+else:
+    from queue import Empty
 
+from time import sleep, time
 from .base import BaseQueue
 
-import time
+try:
+    from boto.sqs import connect_to_region
+    from boto.sqs.jsonmessage import JSONMessage
+except ImportError:
+    from warnings import warn
+    install_modules = [
+        'boto==2.39.0',
+    ]
+    warn('cloudwrapper.sqs requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
+    raise
 
 
 class SqsConnection(object):
@@ -99,7 +110,7 @@ class Queue(BaseQueue):
         If there is no message, this state is cached internally for 5 minutes.
         10 minutes is time used for Google Autoscaler.
         """
-        now = time.time()
+        now = time()
         # We have cached False response
         if self.available_timestamp is not None and now < self.available_timestamp:
             return False

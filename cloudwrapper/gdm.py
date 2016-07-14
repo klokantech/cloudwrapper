@@ -8,13 +8,24 @@ Author: Martin Mikita <martin.mikita@klokantech.com>
 import json
 import errno
 import datetime
-import yaml
-
 
 from time import sleep
-from googleapiclient.discovery import build
-from oauth2client.client import GoogleCredentials
-from googleapiclient.errors import HttpError
+
+try:
+    import yaml
+    from googleapiclient.discovery import build
+    from googleapiclient.errors import HttpError
+    from oauth2client.client import GoogleCredentials
+except ImportError:
+    from warnings import warn
+    install_modules = [
+        'pyyaml==3.11',
+        'google-api-python-client==1.5.1',
+        'oauth2client==2.0.2',
+        'requests==2.9.1',
+    ]
+    warn('cloudwrapper.gdm requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
+    raise
 
 from .gce import GoogleComputeEngine
 

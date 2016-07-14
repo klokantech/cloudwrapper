@@ -4,7 +4,15 @@ Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
 Author: Martin Mikita <martin.mikita@klokantech.com>
 """
 
-import requests
+try:
+    import requests
+except ImportError:
+    from warnings import warn
+    install_modules = [
+        'requests==2.9.1',
+    ]
+    warn('cloudwrapper.gce requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
+    raise
 
 class GoogleComputeEngine(object):
 

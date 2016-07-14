@@ -8,11 +8,27 @@ import os
 import errno
 import base64
 import json
+import sys
 
-from Queue import Empty
+if sys.version[0] == '2':
+    from Queue import Empty
+else:
+    from queue import Empty
+
 from time import sleep
-from googleapiclient.discovery import build
-from oauth2client.client import GoogleCredentials
+
+try:
+    from googleapiclient.discovery import build
+    from oauth2client.client import GoogleCredentials
+except ImportError:
+    from warnings import warn
+    install_modules = [
+        'google-api-python-client==1.5.1',
+        'oauth2client==2.0.2',
+        'requests==2.9.1',
+    ]
+    warn('cloudwrapper.gps requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
+    raise
 
 from .gce import GoogleComputeEngine
 

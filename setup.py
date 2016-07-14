@@ -28,7 +28,7 @@ extras_requires = {
     ],
     'beanstalkd': [
         'pyyaml==3.11',
-        'beanstalkc3==0.4.0'
+        'beanstalkc3==0.4.0',
     ],
     'influxdb': [
         'influxdb==3.0.0',

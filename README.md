@@ -13,6 +13,9 @@ Wrappers around cloud services for Amazon, Google and private cloud.
    - *sqs*: Amazon SQS queues.
    - *cwl*: Amazon CloudWatch logs.
 
+   - **required packages**:
+      - `boto==2.39.0`
+
  - Google cloud services:
    - *gce*: Google Compute Engine instance metadata.
    - *gcl*: Google Cloud Logging.
@@ -23,9 +26,26 @@ Wrappers around cloud services for Amazon, Google and private cloud.
    - *gps*: Google PubSub using GCE Authentication.
    - *gtq*: Google Task Pull Queues.
 
- - Other cloud services:
+   - **required packages**:
+      - `requests==2.9.1`
+      - `gcloud==0.13.0`
+      - `oauth2client==2.0.2`
+      - `google-api-python-client==1.5.1`
+      - `gcloud_taskqueue==0.1.2`
+      - `pyyaml==3.11`
+
+ - BeansTalkd:
    - *btq*: BeansTalkd Queues.
+
+   - **required packages**:
+      - `pyyaml==3.11`
+      - `beanstalkc3==0.4.0`
+
+ - InfluxDB:
    - *idm*: Influx DB Metric.
+
+   - **required packages**:
+      - `influxdb==3.0.0`
 
 
 ## Install
@@ -66,6 +86,8 @@ pip3 install https://github.com/klokantech/cloudwrapper/archive/v1.1.zip
 
 
 ### BeansTalkd Queues
+
+Install required packages: `pip install beanstalkc3==0.4.0 pyyaml==3.11`
 
 ```python
 from cloudwrapper.btq import BtqConnection

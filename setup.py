@@ -47,7 +47,7 @@ setup(
     maintainer='Martin Mikita',
     maintainer_email='martin.mikita@klokantech.com',
     url='https://github.com/klokantech/cloudwrapper',
-    license='Copyright 2016 Klokan Technologies GmbH',
+    license='LGPL 2.1',
     packages=find_packages(exclude=[]),
     include_package_data=True,
     install_requires=install_requires,

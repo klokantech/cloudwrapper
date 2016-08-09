@@ -71,7 +71,11 @@ class Queue(BaseQueue):
         Response: see https://cloud.google.com/appengine/docs/python/taskqueue/rest/taskqueues#resource
         """
         try :
-            taskqueue = self.handle_api.taskqueues().get(project=self.handle.project, taskqueue=self.handle.id, getStats=True).execute()
+            taskqueue = self.handle_api.taskqueues().get(
+                project=self.handle.project,
+                taskqueue=self.handle.id,
+                getStats=True
+            ).execute(num_retries=6)
         except:
             return 0
         return int(taskqueue['stats']['totalTasks'])
@@ -186,7 +190,11 @@ class Queue(BaseQueue):
         exc = None
         for _repeat in range(6):
             try:
-                taskqueue = self.handle_api.taskqueues().get(project=self.handle.project, taskqueue=self.handle.id, getStats=True).execute()
+                taskqueue = self.handle_api.taskqueues().get(
+                    project=self.handle.project,
+                    taskqueue=self.handle.id,
+                    getStats=True
+                ).execute(num_retries=6)
                 break
             except IOError as e:
                 exc = e

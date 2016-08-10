@@ -87,12 +87,12 @@ class Handler(logging.Handler):
                 self.entries = []
                 break
             except IOError as e:
-                time.sleep(_repeat * 2 + 1)
+                sleep(_repeat * 2 + 1)
                 if e.errno == errno.EPIPE:
                     credentials = GoogleCredentials.get_application_default()
                     self.connection = build('logging', 'v2beta1', credentials=credentials)
             except Exception:
-                time.sleep(_repeat * 2 + 5)
+                sleep(_repeat * 2 + 5)
 
 
     def list(self, filter=None, orderAsc=True):

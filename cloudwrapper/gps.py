@@ -61,7 +61,7 @@ class Topic(object):
 
 
     def publish(self, message):
-        msg = base64.b64encode( json.dumps(message) )
+        msg = base64.b64encode( json.dumps(message, separators=(',', ':')) )
         body = {
             "messages": [
                 {

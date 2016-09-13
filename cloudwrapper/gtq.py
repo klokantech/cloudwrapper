@@ -91,7 +91,7 @@ class Queue(BaseQueue):
             raise Exception('block and timeout must have default values')
         for _repeat in range(6):
             try:
-                self.handle.insert_task(description=json.dumps(item), client=self.client)
+                self.handle.insert_task(description=json.dumps(item, separators=(',', ':')), client=self.client)
                 break
             except IOError as e:
                 sleep(_repeat * 2 + 1)

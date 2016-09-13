@@ -116,7 +116,7 @@ class Queue(BaseQueue):
         """
         if not (block and timeout is None):
             raise Exception('BtqConnection::Queue::put() - Block and timeout must have default values.')
-        self._wrap_handle('put', json.dumps(item), ttr=ttr, delay=delay, priority=priority)
+        self._wrap_handle('put', json.dumps(item, separators=(',', ':')), ttr=ttr, delay=delay, priority=priority)
 
 
     def get(self, block=True, timeout=None):

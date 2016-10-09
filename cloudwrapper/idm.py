@@ -28,7 +28,7 @@ class IdmConnection(object):
         self.host = host
         self.port = int(port)
         self.client = InfluxDBClient(self.host, self.port, user, pswd, db)
-        self.client.create_database(db, if_not_exists=True)
+        self.client.create_database(db)
         self.globalLabels = {}
 
 

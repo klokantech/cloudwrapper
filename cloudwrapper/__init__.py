@@ -22,7 +22,10 @@ gtq -- Google Task Pull Queues.
 
 - Other cloud services:
 btq -- BeansTalkd Queues.
+
 idm -- Influx DB Metric.
+idl -- Influx DB Logging.
+idb -- Influx DB direct use (as SQL database).
 
 """
 

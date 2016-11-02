@@ -43,6 +43,8 @@ Wrappers around cloud services for Amazon, Google and private cloud.
 
  - InfluxDB:
    - *idm*: Influx DB Metric.
+   - *idl*: Influx DB Logging.
+   - *idb*: Influx DB direct use (as SQL database).
 
    - **required packages**:
       - `influxdb==3.0.0`

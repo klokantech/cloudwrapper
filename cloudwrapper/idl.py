@@ -5,11 +5,13 @@ Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
 Author: Martin Mikita <martin.mikita@klokantech.com>
 """
 
+import logging
 import json
 import errno
 import datetime
 import socket
 
+from collections import OrderedDict
 from time import sleep
 
 try:
@@ -67,6 +69,25 @@ class Handler(logging.Handler):
         return dt.isoformat("T") + "Z"
 
 
+    def _format_json(self, record):
+        data = OrderedDict()
+        defaultFormatter = logging.Formatter()
+        data['moment'] = defaultFormatter.formatTime(record)
+        data['severity'] = record.levelname
+        if isinstance(record.msg, dict):
+            for key in sorted(record.msg.keys()):
+                data[key] = record.msg[key]
+        else:
+            try:
+                data['message'] = record.msg % record.args
+            except Exception:
+                pass
+        if record.exc_info is not None:
+            data.setdefault('message', str(record.exc_info[1]))
+            data['traceback'] = defaultFormatter.formatException(record.exc_info)
+        return json.dumps(data)
+
+
     def __init__(self, client, logId, globalLabels=None, *args, **kwargs):
         super(Handler, self).__init__(*args, **kwargs)
         """
@@ -107,12 +128,14 @@ class Handler(logging.Handler):
 
 
     def emit(self, record):
-        d = datetime.utcnow() # <-- get time in UTC
+        d = datetime.datetime.utcnow() # <-- get time in UTC
         tags = self.globalLabels.copy()
         tags.update({
             'severity': record.levelname,
         })
-        fields = json.loads(self.format(record))
+        fields = self.format(record)
+        if not isinstance(fields, dict):
+            fields = json.loads(self._format_json(record))
         fields.update({
             'timestamp': self._format_rfc3339(d),
         })

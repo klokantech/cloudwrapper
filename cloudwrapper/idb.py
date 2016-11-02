@@ -37,7 +37,7 @@ class IdbConnection(object):
         """
         Return Table object, tags is list of columns that should be indexed
         """
-        return Handler(self.client, name, tags)
+        return Table(self.client, name, tags)
 
 
 
@@ -84,26 +84,40 @@ class Table(object):
             raise Exception('Unable to insert data into this table: '+str(e))
 
 
-    def get(self, col, value):
-        sql = 'SELECT * FROM "{}" WHERE "{}" = \'{}\''.format(self.name, col, value)
-        rs = client.query(sql)
-        return list(rs.get_points())
-
-
-    def list(self, columns=None):
-
+    def list(self, columns=None, where=None):
         sql = 'SELECT '
         sqlCols = []
-        for col in columns:
-            sqlcols.append('"{}"'.format(col))
-        if not sqlCols:
+
+        if columns is None:
             sqlCols.append('*')
+        else:
+            for col in columns:
+                sqlcols.append('"{}"'.format(col))
+
         sql += ','.join(sqlCols)
 
-        sql += 'FROM "{}"'.format(self.name)
+        sql += ' FROM "{}"'.format(self.name)
 
-        # filter and orderAsc is not implemented yet
-        rs = client.query(sql)
+        if where is not None:
+            sqlWhere = []
+            if isinstance(where, dict):
+                for col in where:
+                    sqlWhere.append('"{}" = \'{}\''.format(col, where[col]))
+            else:
+                sqlWhere.append(where)
+            sql += ' WHERE '
+            sql += ' AND '.join(sqlWhere)
+
+        rs = self.client.query(sql)
         if rs:
-            for row in rs:
-                yield row
+            for row in rs.get_points():
+                myrow = {}
+                for x in row:
+                    if isinstance(row[x], (str, unicode)):
+                        try:
+                            myrow[x] = json.loads(row[x])
+                        except ValueError:
+                            myrow[x] = row[x]
+                    else:
+                        myrow[x] = row[x]
+                yield myrow

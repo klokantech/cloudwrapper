@@ -28,7 +28,7 @@ class GoogleComputeEngine(object):
         try:
             self._id = requests.get(self.server + "id", headers=self.headers).text
             self._projectId = requests.get('http://metadata/computeMetadata/v1/project/project-id', headers=self.headers).text
-        except requests.exceptions.ConnectTimeout:
+        except (requests.exceptions.ConnectTimeout, requests.exceptions.ConnectionError) as ex:
             self.is_instance = False
         else:
             self.is_instance = True

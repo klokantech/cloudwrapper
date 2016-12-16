@@ -84,7 +84,7 @@ class Table(object):
             raise Exception('Unable to insert data into this table: '+str(e))
 
 
-    def list(self, columns=None, where=None):
+    def list(self, columns=None, where=None, sort=None):
         sql = 'SELECT '
         sqlCols = []
 
@@ -103,10 +103,28 @@ class Table(object):
             if isinstance(where, dict):
                 for col in where:
                     sqlWhere.append('"{}" = \'{}\''.format(col, where[col]))
-            else:
+            elif isinstance(where, (str, unicode)):
                 sqlWhere.append(where)
+            else:
+                raise Exception('Unable to parse where argument: type {}'.format(type(where)))
             sql += ' WHERE '
             sql += ' AND '.join(sqlWhere)
+
+        if sort is not None:
+            sqlSort = []
+            if isinstance(sort, dict):
+                for col in sort:
+                    if sort[col].upper() in ['ASC', 'DESC']:
+                        sqlSort.append('"{}" {}'.format(col, sort[col]))
+            elif isinstance(sort, (str, unicode)):
+                sqlSort.append(sort)
+            else:
+                raise Exception('Unable to parse sort argument: type {}'.format(type(sort)))
+            sql += ' SORT BY '
+            sql += ' , '.join(sqlSort)
+        # Add default sorting by time DESC
+        else:
+            sql += ' SORT BY time DESC '
 
         rs = self.client.query(sql)
         if rs:
@@ -121,3 +139,11 @@ class Table(object):
                     else:
                         myrow[x] = row[x]
                 yield myrow
+
+
+    def get(self, columns=None, where=None, sort=None):
+        result = None
+        for row in self.list(columns, where, sort):
+            result = row
+            break
+        return result

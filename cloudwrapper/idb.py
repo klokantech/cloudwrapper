@@ -23,6 +23,13 @@ except ImportError:
     raise
 
 
+# Python 3 compatible
+try:
+    UNICODE_EXISTS = bool(type(unicode))
+except NameError:
+    unicode = str
+
+
 class IdbConnection(object):
 
     def __init__(self, user, pswd, host='localhost', port=8086, db='static'):

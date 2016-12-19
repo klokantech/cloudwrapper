@@ -120,11 +120,11 @@ class Table(object):
                 sqlSort.append(sort)
             else:
                 raise Exception('Unable to parse sort argument: type {}'.format(type(sort)))
-            sql += ' SORT BY '
+            sql += ' ORDER BY '
             sql += ' , '.join(sqlSort)
         # Add default sorting by time DESC
         else:
-            sql += ' SORT BY time DESC '
+            sql += ' ORDER BY time DESC '
 
         rs = self.client.query(sql)
         if rs:

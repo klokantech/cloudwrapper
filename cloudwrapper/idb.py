@@ -154,3 +154,8 @@ class Table(object):
             result = row
             break
         return result
+
+
+    def drop(self):
+        sql = 'DROP MEASUREMENT "{}"'.format(self.name)
+        rs = self.client.query(sql)

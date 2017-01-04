@@ -197,7 +197,8 @@ class Metric(object):
         self.points = []
 
         labels = self.globalLabels.copy()
-        labels.update({
+        if 'hostname' not in labels:
+            labels.update({
                 'hostname': self.my_hostname
             })
         if metricLabels is not None:

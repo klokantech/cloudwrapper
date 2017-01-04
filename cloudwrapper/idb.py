@@ -24,6 +24,13 @@ except ImportError:
     raise
 
 
+# Python 3 compatible
+try:
+    UNICODE_EXISTS = bool(type(unicode))
+except NameError:
+    unicode = str
+
+
 class IdbConnection(object):
 
     def __init__(self, user, pswd, host='localhost', port=8086, db='static'):
@@ -85,7 +92,7 @@ class Table(object):
             raise Exception('Unable to insert data into this table: '+str(e))
 
 
-    def list(self, columns=None, where=None):
+    def list(self, columns=None, where=None, sort=None):
         sql = 'SELECT '
         sqlCols = []
 
@@ -104,12 +111,30 @@ class Table(object):
             if isinstance(where, dict):
                 for col in where:
                     sqlWhere.append('"{}" = \'{}\''.format(col, where[col]))
+            elif isinstance(where, (str, unicode)):
+                sqlWhere.append(where)
             elif isinstance(where, collections.Iterable):
                 sqlWhere.extend(where)
             else:
-                sqlWhere.append(where)
+                raise Exception('Unable to parse where argument: type {}'.format(type(where)))
             sql += ' WHERE '
             sql += ' AND '.join(sqlWhere)
+
+        if sort is not None:
+            sqlSort = []
+            if isinstance(sort, dict):
+                for col in sort:
+                    if sort[col].upper() in ['ASC', 'DESC']:
+                        sqlSort.append('"{}" {}'.format(col, sort[col]))
+            elif isinstance(sort, (str, unicode)):
+                sqlSort.append(sort)
+            else:
+                raise Exception('Unable to parse sort argument: type {}'.format(type(sort)))
+            sql += ' ORDER BY '
+            sql += ' , '.join(sqlSort)
+        # Add default sorting by time DESC
+        else:
+            sql += ' ORDER BY time DESC '
 
         rs = self.client.query(sql)
         if rs:
@@ -124,3 +149,16 @@ class Table(object):
                     else:
                         myrow[x] = row[x]
                 yield myrow
+
+
+    def get(self, columns=None, where=None, sort=None):
+        result = None
+        for row in self.list(columns, where, sort):
+            result = row
+            break
+        return result
+
+
+    def drop(self):
+        sql = 'DROP MEASUREMENT "{}"'.format(self.name)
+        rs = self.client.query(sql)

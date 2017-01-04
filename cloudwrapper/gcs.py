@@ -11,6 +11,7 @@ from time import sleep
 
 try:
     from gcloud import storage
+    from httplib import BadStatusLine
 except ImportError:
     from warnings import warn
     install_modules = [
@@ -45,9 +46,23 @@ class Bucket(object):
         self.handle = handle
 
 
+    def _reconnect(self, name):
+        connection = storage.Client()
+        self.handle = connection.get_bucket(name)
+
+
     def put(self, source, target):
-        key = self.handle.blob(target, chunk_size=self.CHUNK_SIZE)
-        key.upload_from_filename(source)
+        for _repeat in range(6):
+            try:
+                key = self.handle.blob(target, chunk_size=self.CHUNK_SIZE)
+                key.upload_from_filename(source)
+                break
+            except (IOError, BadStatusLine) as e:
+                sleep(_repeat * 2 + 1)
+                self._reconnect(self.handle.name)
+            except:
+                pass
+
         # multipart = self.handle.initiate_multipart_upload(target)
         # try:
         #     with open(source, 'rb') as fp:
@@ -67,7 +82,15 @@ class Bucket(object):
         if key is None:
             raise Exception("Object {} not exists in bucket {}.".format(source, self.handle.id))
         key.chunk_size = self.CHUNK_SIZE
-        key.download_to_filename(target)
+        for _repeat in range(6):
+            try:
+                key.download_to_filename(target)
+            except (IOError, BadStatusLine) as e:
+                sleep(_repeat * 2 + 1)
+                self._reconnect(self.handle.name)
+                key = self.handle.get_blob(source)
+            except:
+                pass
 
 
     def has(self, source):
@@ -86,7 +109,14 @@ class Bucket(object):
 
 
     def is_public(self, source):
-        key = self.handle.get_blob(source)
-        if key is None:
-            return False
-        return 'READER' in key.acl.all().get_roles()
+        for _repeat in range(6):
+            try:
+                key = self.handle.get_blob(source)
+                if key is None:
+                    return False
+                return 'READER' in key.acl.all().get_roles()
+            except (IOError, BadStatusLine) as e:
+                sleep(_repeat * 2 + 1)
+                self._reconnect(self.handle.name)
+            except:
+                pass

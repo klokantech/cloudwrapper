@@ -9,6 +9,7 @@ import json
 import errno
 import datetime
 import socket
+import collections
 
 from time import sleep
 
@@ -19,7 +20,7 @@ except ImportError:
     install_modules = [
         'influxdb==3.0.0',
     ]
-    warn('cloudwrapper.idl requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
+    warn('cloudwrapper.idb requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
     raise
 
 
@@ -103,6 +104,8 @@ class Table(object):
             if isinstance(where, dict):
                 for col in where:
                     sqlWhere.append('"{}" = \'{}\''.format(col, where[col]))
+            elif isinstance(where, collections.Iterable):
+                sqlWhere.extend(where)
             else:
                 sqlWhere.append(where)
             sql += ' WHERE '

@@ -6,10 +6,15 @@ Author: Martin Mikita <martin.mikita@klokantech.com>
 
 try:
     import requests
+    from googleapiclient.discovery import build
+    from googleapiclient.errors import HttpError
+    from oauth2client.client import GoogleCredentials
 except ImportError:
     from warnings import warn
     install_modules = [
         'requests==2.9.1',
+        'google-api-python-client==1.5.1',
+        'oauth2client==2.0.2',
     ]
     warn('cloudwrapper.gce requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
     raise
@@ -25,13 +30,21 @@ class GoogleComputeEngine(object):
         self._externalIp = None
         self._internalIp = None
         self._projectId = None
+        self._credentials = None
+        self._client_ce = None
         try:
             self._id = requests.get(self.server + "id", headers=self.headers).text
+            self._reconnect()
             self._projectId = requests.get('http://metadata/computeMetadata/v1/project/project-id', headers=self.headers).text
         except requests.exceptions.ConnectTimeout:
             self.is_instance = False
         else:
             self.is_instance = True
+
+
+    def _reconnect(self):
+        self._credentials = GoogleCredentials.get_application_default()
+        self._client_ce = build('compute', 'v1', credentials=self._credentials)
 
 
     def isInstance(self):
@@ -83,4 +96,51 @@ class GoogleComputeEngine(object):
             return None
         # Project ID should be requested only once in constructor!
         return self._projectId
+
+
+    def regionQuotas(self, region_name):
+        if not self.is_instance:
+            return None
+        request = self._client_ce.regions().get(
+            project=self.projectId(),
+            region=region_name
+        )
+        region = request.execute(num_retries=6)
+        return region['quotas'] if 'quotas' in region else None
+
+
+    def regionsQuotas(self):
+        if not self.is_instance:
+            return None
+        regions_list = {}
+        request = self._client_ce.regions().list(
+            project=self.projectId()
+        )
+        while request is not None:
+            response = request.execute(num_retries=6)
+            for region in response['items']:
+                regions_list[region['name']] = region['quotas']
+            request = self._client_ce.regions().list_next(
+                previous_request=request,
+                previous_response=response
+            )
+        return regions_list
+
+
+    def regionsZones(self):
+        if not self.is_instance:
+            return None
+        regions_list = {}
+        request = self._client_ce.regions().list(
+            project=self.projectId()
+        )
+        while request is not None:
+            response = request.execute(num_retries=6)
+            for region in response['items']:
+                regions_list[region['name']] = [z.split('/')[-1] for z in region['zones']]
+            request = self._client_ce.regions().list_next(
+                previous_request=request,
+                previous_response=response
+            )
+        return regions_list
 

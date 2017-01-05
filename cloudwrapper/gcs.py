@@ -11,7 +11,6 @@ from time import sleep
 
 try:
     from gcloud import storage
-    from httplib import BadStatusLine
 except ImportError:
     from warnings import warn
     install_modules = [
@@ -19,6 +18,13 @@ except ImportError:
     ]
     warn('cloudwrapper.gcs requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
     raise
+
+try:
+    # python2
+    from httplib import BadStatusLine
+except ImportError:
+    # python3
+    from http.client import BadStatusLine
 
 
 class GcsConnection(object):

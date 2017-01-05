@@ -159,6 +159,11 @@ class Table(object):
         return result
 
 
-    def drop(self):
-        sql = 'DROP MEASUREMENT "{}"'.format(self.name)
-        rs = self.client.query(sql)
+    def drop(self, silent=True):
+        try:
+            sql = 'DROP MEASUREMENT "{}"'.format(self.name)
+            rs = self.client.query(sql)
+        except:
+            if not silent:
+                raise
+            pass

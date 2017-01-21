@@ -26,6 +26,7 @@ class GoogleComputeEngine(object):
         self.headers = {"Metadata-Flavor": "Google"}
         self._id = None
         self._name = None
+        self._hostname = None
         self._zone = None
         self._externalIp = None
         self._internalIp = None
@@ -61,7 +62,7 @@ class GoogleComputeEngine(object):
         if not self.is_instance:
             return ''
         if self._name is None:
-            self._name = requests.get(self.server + "name", headers=self.headers).text
+            self._name = requests.get(self.server + "hostname", headers=self.headers).text
         return self._name
 
 

@@ -4,10 +4,11 @@ Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
 Author: Martin Mikita <martin.mikita@klokantech.com>
 """
 
-import os
 import errno
 
 from time import sleep
+
+from .base import BaseBucket
 
 try:
     from gcloud import storage
@@ -16,7 +17,8 @@ except ImportError:
     install_modules = [
         'gcloud==0.13.0',
     ]
-    warn('cloudwrapper.gcs requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
+    warn('cloudwrapper.gcs requires these packages:\n  - {}'.format(
+        '\n  - '.join(install_modules)))
     raise
 
 try:
@@ -37,14 +39,27 @@ class GcsConnection(object):
         for _repeat in range(6):
             try:
                 return Bucket(self.connection.get_bucket(name))
-            except IOError as e:
+            except (IOError, BadStatusLine) as e:
                 sleep(_repeat * 2 + 1)
                 if e.errno == errno.EPIPE:
                     self.connection = storage.Client()
 
 
+    def list(self):
+        for _repeat in range(6):
+            buckets = []
+            try:
+                for bucket in self.connection.list_buckets():
+                    buckets.append(bucket.name)
+                break
+            except (IOError, BadStatusLine) as e:
+                sleep(_repeat * 2 + 1)
+                if e.errno == errno.EPIPE:
+                    self.connection = storage.Client()
+        return buckets
 
-class Bucket(object):
+
+class Bucket(BaseBucket):
 
     CHUNK_SIZE = (500 << 20)  # 500 MB
 
@@ -69,24 +84,12 @@ class Bucket(object):
             except:
                 pass
 
-        # multipart = self.handle.initiate_multipart_upload(target)
-        # try:
-        #     with open(source, 'rb') as fp:
-        #         offsets = xrange(0, source_size, self.PART_LIMIT)
-        #         for part, offset in enumerate(offsets, start=1):
-        #             size = min(source_size, offset + self.PART_LIMIT) - offset
-        #             fp.seek(offset)
-        #             multipart.upload_part_from_file(fp, part, size=size)
-        #     multipart.complete_upload()
-        # except:
-        #     multipart.cancel_upload()
-        #     raise
-
 
     def get(self, source, target):
         key = self.handle.get_blob(source)
         if key is None:
-            raise Exception("Object {} not exists in bucket {}.".format(source, self.handle.id))
+            raise Exception("Object {} not exists in bucket {}.".format(
+                source, self.handle.id))
         key.chunk_size = self.CHUNK_SIZE
         for _repeat in range(6):
             try:
@@ -126,3 +129,26 @@ class Bucket(object):
                 self._reconnect(self.handle.name)
             except:
                 pass
+
+
+    def make_public(self, source):
+        for _repeat in range(6):
+            try:
+                key = self.handle.get_blob(source)
+                if key and not ('READER' in key.acl.all().get_roles()):
+                    key.make_public()
+                break
+            except (IOError, BadStatusLine) as e:
+                sleep(_repeat * 2 + 1)
+                self._reconnect(self.handle.name)
+            except:
+                pass
+
+    def is_remote(self, source):
+        return True
+
+    def get_public_url(self, source):
+        if self.has(source):
+            key = self.handle.blob(source)
+            return key.public_url if self.is_public(source) else None
+        return None

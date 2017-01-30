@@ -65,6 +65,7 @@ class Bucket(BaseBucket):
 
     def __init__(self, handle):
         self.handle = handle
+        self.name = handle.name
 
 
     def _reconnect(self, name):
@@ -80,7 +81,7 @@ class Bucket(BaseBucket):
                 break
             except (IOError, BadStatusLine) as e:
                 sleep(_repeat * 2 + 1)
-                self._reconnect(self.handle.name)
+                self._reconnect(self.name)
             except:
                 pass
 
@@ -96,7 +97,7 @@ class Bucket(BaseBucket):
                 key.download_to_filename(target)
             except (IOError, BadStatusLine) as e:
                 sleep(_repeat * 2 + 1)
-                self._reconnect(self.handle.name)
+                self._reconnect(self.name)
                 key = self.handle.get_blob(source)
             except:
                 pass
@@ -126,7 +127,7 @@ class Bucket(BaseBucket):
                 return 'READER' in key.acl.all().get_roles()
             except (IOError, BadStatusLine) as e:
                 sleep(_repeat * 2 + 1)
-                self._reconnect(self.handle.name)
+                self._reconnect(self.name)
             except:
                 pass
 
@@ -140,7 +141,7 @@ class Bucket(BaseBucket):
                 break
             except (IOError, BadStatusLine) as e:
                 sleep(_repeat * 2 + 1)
-                self._reconnect(self.handle.name)
+                self._reconnect(self.name)
             except:
                 pass
 

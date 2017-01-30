@@ -62,7 +62,15 @@ class GoogleComputeEngine(object):
         if not self.is_instance:
             return ''
         if self._name is None:
-            self._name = requests.get(self.server + "hostname", headers=self.headers).text
+            try:
+                self._name = requests.get(self.server + "name", headers=self.headers).text
+            except:
+                # Missing name attribute in metadata server
+                # parse name from the hostname
+                hostname = self.instanceHostname()
+                # Pattern of hostname: name.c.project.internal
+                parts = hostname.split('.')
+                self._name = '.'.join(parts[:-3])
         return self._name
 
 

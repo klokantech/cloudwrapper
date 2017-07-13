@@ -6,12 +6,7 @@ Author: Martin Mikita <martin.mikita@klokantech.com>
 """
 
 import json
-import errno
-import datetime
-import socket
 import collections
-
-from time import sleep
 
 try:
     from influxdb import InfluxDBClient
@@ -60,10 +55,6 @@ class Table(object):
         self.tags = tags
 
 
-    def logId(self):
-        return self.logId
-
-
     def insert(self, data):
         """
         Insert data into this table
@@ -72,7 +63,7 @@ class Table(object):
         fieldsData = {}
         # Separate tags from other values - fields
         if not isinstance(data, dict):
-            raise Error('Invalid format of data, expected dict')
+            raise Exception('Invalid format of data, expected dict')
         for col in data:
             val = data[col]
             if not isinstance(val, (str, unicode)):
@@ -100,7 +91,7 @@ class Table(object):
             sqlCols.append('*')
         else:
             for col in columns:
-                sqlcols.append('"{}"'.format(col))
+                sqlCols.append('"{}"'.format(col))
 
         sql += ','.join(sqlCols)
 

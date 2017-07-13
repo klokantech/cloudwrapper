@@ -2,7 +2,7 @@
 
 Wrappers around cloud services for Amazon, Google and private cloud.
 
-**Copyright**: (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
+**Copyright**: (C) 2016-2017 Klokan Technologies GmbH (http://www.klokantech.com/)
 
 **Maintainer**: Martin Mikita, martin.mikita@klokantech.com
 
@@ -62,6 +62,7 @@ https://github.com/klokantech/cloudwrapper/archive/master.zip
 
 ### Versions
 
+ - v1.10 : `https://github.com/klokantech/cloudwrapper/archive/v1.10.zip`
  - v1.9 : `https://github.com/klokantech/cloudwrapper/archive/v1.9.zip`
  - v1.8 : `https://github.com/klokantech/cloudwrapper/archive/v1.8.zip`
  - v1.7 : `https://github.com/klokantech/cloudwrapper/archive/v1.7.zip`
@@ -80,7 +81,7 @@ https://github.com/klokantech/cloudwrapper/archive/master.zip
 ```bash
 apt-get install python-setuptools
 easy_install pip
-pip install https://github.com/klokantech/cloudwrapper/archive/v1.9.zip
+pip install https://github.com/klokantech/cloudwrapper/archive/v1.10.zip
 ```
 
 ### Python3
@@ -88,7 +89,7 @@ pip install https://github.com/klokantech/cloudwrapper/archive/v1.9.zip
 ```bash
 apt-get install python3-setuptools
 easy_install3 pip
-pip3 install https://github.com/klokantech/cloudwrapper/archive/v1.9.zip
+pip3 install https://github.com/klokantech/cloudwrapper/archive/v1.10.zip
 ```
 
 

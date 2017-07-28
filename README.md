@@ -14,7 +14,7 @@ Wrappers around cloud services for Amazon, Google and private cloud.
    - *cwl*: Amazon CloudWatch logs.
 
    - **required packages**:
-      - `boto==2.39.0`
+      - `boto==2.48.0`
 
  - Google cloud services:
    - *gce*: Google Compute Engine instance metadata.

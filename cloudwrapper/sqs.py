@@ -20,9 +20,10 @@ try:
 except ImportError:
     from warnings import warn
     install_modules = [
-        'boto==2.39.0',
+        'boto==2.48.0',
     ]
-    warn('cloudwrapper.sqs requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
+    warn('cloudwrapper.sqs requires these packages:\n  - {}'.format(
+        '\n  - '.join(install_modules)))
     raise
 
 
@@ -132,5 +133,5 @@ class Queue(BaseQueue):
         if int(count) > 0:
             return True
         # No available task, cache this response for 5 minutes
-        self.available_timestamp = now + 300 # 5 minutes
+        self.available_timestamp = now + 300  # 5 minutes
         return False

@@ -15,7 +15,7 @@ try:
 except ImportError:
     from warnings import warn
     install_modules = [
-        'boto==2.39.0',
+        'boto==2.48.0',
     ]
     warn('cloudwrapper.cwl requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
     raise

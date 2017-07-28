@@ -7,23 +7,30 @@ Author: Vaclav Klusak <vaclav.klusak@klokantech.com>
 import os
 
 try:
-    from boto.s3 import connect_to_region
+    from boto.s3 import connect_to_region, connection
 except ImportError:
     from warnings import warn
     install_modules = [
-        'boto==2.39.0',
+        'boto==2.48.0',
     ]
-    warn('cloudwrapper.s3 requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
+    warn('cloudwrapper.s3 requires these packages:\n  - {}'.format(
+        '\n  - '.join(install_modules)))
     raise
 
 
 class S3Connection(object):
 
-    def __init__(self, region, key=None, secret=None):
-        self.connection = connect_to_region(
-            region,
-            aws_access_key_id=key,
-            aws_secret_access_key=secret)
+    def __init__(self, region, key=None, secret=None, host=None):
+        if region is None and host is not None:
+            self.connection = connection.S3Connection(
+                host=host,
+                aws_access_key_id=key,
+                aws_secret_access_key=secret)
+        else:
+            self.connection = connect_to_region(
+                region,
+                aws_access_key_id=key,
+                aws_secret_access_key=secret)
 
 
     def bucket(self, name):

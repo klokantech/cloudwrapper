@@ -17,6 +17,12 @@ except ImportError:
         '\n  - '.join(install_modules)))
     raise
 
+try:
+    for _ in xrange(1):
+        pass
+except NameError:
+    xrange = range
+
 
 class S3Connection(object):
 

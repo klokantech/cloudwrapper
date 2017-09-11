@@ -5,22 +5,23 @@ Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
 Author: Martin Mikita <martin.mikita@klokantech.com>
 """
 
-import json
 import errno
 import datetime
 
 from time import sleep
 
 try:
-    from googleapiclient.discovery import build
-    from googleapiclient.errors import HttpError
-    from oauth2client.client import GoogleCredentials
+    from google.cloud import monitoring
+    from google.api.core.exceptions import GoogleAPIError
+    from google.cloud.exceptions import NotFound
 except ImportError:
     from warnings import warn
     install_modules = [
-        'google-api-python-client==1.5.1',
+        'google-cloud-monitoring==0.27.0',
+        'google-cloud-core==0.27.1',
+        'google-auth==1.0.2',
         'oauth2client==2.0.2',
-        'requests==2.9.1',
+        'requests==2.18.4',
     ]
     warn('cloudwrapper.gcm3 requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
     raise
@@ -31,12 +32,11 @@ from .gce import GoogleComputeEngine
 class GcmConnection(object):
 
     def __init__(self):
-        self.credentials = GoogleCredentials.get_application_default()
-        self.client = build('monitoring', 'v3', credentials=self.credentials)
+        pass
 
 
-    def metric(self, name, projectId=None):
-        return Metric(name, projectId, self.client, self.credentials)
+    def metric(self, name, project_id=None):
+        return Metric(name, project_id)
 
 
 class Metric(object):
@@ -45,30 +45,29 @@ class Metric(object):
     CUSTOM_METRIC_DOMAIN = "custom.googleapis.com"
 
     def _format_rfc3339(self, dt):
-        """Formats a datetime per RFC 3339.
+        """Format a datetime per RFC 3339.
+
         :param dt: Datetime instanec to format, defaults to utcnow
         """
         return dt.isoformat("T") + "Z"
 
 
-    def __init__(self, name, projectId, client, credentials):
+    def __init__(self, name, project_id):
         self.metricType = name
         self.gce = GoogleComputeEngine()
-        if projectId is None:
-            projectId = 'projects/' + self.gce.projectId()
-        elif 'projects/' not in projectId:
-            projectId = 'projects/' + projectId
-        self.projectId = projectId
+        if project_id is None:
+            project_id = self.gce.projectId()
+        elif 'projects/' in project_id:
+            project_id = project_id.split('/')[-1]
+        self.project_id = project_id
         self.points = []
         self.valueType = None
         self.metricKind = None
-        self.client = client
-        self.credentials = credentials
+        self.client = monitoring.Client(project=self.project_id)
 
 
     def _reconnect(self):
-        self.credentials = GoogleCredentials.get_application_default()
-        self.client = build('monitoring', 'v3', credentials=self.credentials)
+        self.client = monitoring.Client(project=self.project_id)
         self.gce = GoogleComputeEngine()
 
 
@@ -83,67 +82,57 @@ class Metric(object):
     def create(self, metricKind, valueType='DOUBLE', description='', displayName=None):
         if displayName is None:
             displayName = self.metricType.replace('/', ' ')
-        metrics_descriptor = {
-            'name': '{}/metricDescriptors/{}/{}'.format(
-                self.projectId, self.CUSTOM_METRIC_DOMAIN, self.metricType),
-            'type': '{}/{}'.format(self.CUSTOM_METRIC_DOMAIN, self.metricType),
-            'metricKind': metricKind,
-            'valueType': valueType,
-            'unit': 'items',
-            'description': description,
-            'displayName': displayName,
-            'labels': [
-                {
-                    'key': 'compute.googleapis.com/resource_id',
-                    'valueType': 'STRING',
-                    'description': 'Google Compute Instance ID'
-                }
-            ]
-        }
+        descriptor = self.client.metric_descriptor(
+            self.fullName(),
+            metric_kind=metricKind,
+            value_type=valueType,
+            description=description,
+            display_name=displayName,
+            unit='items'
+        )
+        # 'labels': [
+        #     {
+        #         'key': 'gce_instance_id',
+        #         'valueType': 'STRING',
+        #         'description': 'Google Compute Instance ID'
+        #     }
+        # ]
 
-        try:
-            response = self.client.projects().metricDescriptors().create(
-                name=self.projectId,
-                body=metrics_descriptor
-            ).execute(num_retries=6)
-        except Exception as e:
-            raise Exception('Failed to create custom metric: {}'.format(e))
+        for _repeat in range(6):
+            try:
+                descriptor.create()
+                metric = self.get()
+                if metric:
+                    break
+                raise Exception()
+            except NotFound:
+                continue
+            except Exception as e:
+                sleep(_repeat * 2 + 1)
+                if hasattr(e, 'errno') and e.errno == errno.EPIPE:
+                    self._reconnect()
+        else:
+            raise Exception('Failed to create custom metric.')
 
-
-        metric = self.get()
-        while metric is None:
-            sleep(1)
-            metric = self.get()
-        # Metric was created and exists with correct name
-        return response if metric['name'] == response['name'] else None
+        return metric
 
 
     def get(self):
-        try:
-            request = self.client.projects().metricDescriptors().get(
-                name='{}/metricDescriptors/{}/{}'.format(
-                    self.projectId,
-                    self.CUSTOM_METRIC_DOMAIN,
-                    self.metricType)
-            )
-            response = request.execute(num_retries=3)
-            metric = None
-            if (response is not None and 'name' in response and
-                response['name'] == '{}/{}'.format(self.CUSTOM_METRIC_DOMAIN, self.metricType)):
-                metric = response
-            else:
-                #raise Exception('Failed to get custom metric {}: {}'.format(self.metricType, str(response)))
+        for _repeat in range(6):
+            try:
+                metric = self.client.fetch_metric_descriptor(self.fullName())
+                if not metric:
+                    raise Exception()
+                self.valueType = metric.value_type.upper()
+                self.metricKind = metric.metric_kind.upper()
+                return metric
+            except NotFound:
                 return None
-
-            if 'valueType' in metric:
-                self.valueType = metric['valueType'].upper()
-            if 'metricKind' in metric:
-                self.metricKind = metric['metricKind'].upper()
-            return metric
-        except HttpError as ex:
-            if ex.resp.status == 404:
-                return None
-            raise
+            except Exception as e:
+                sleep(_repeat * 2 + 1)
+                if hasattr(e, 'errno') and e.errno == errno.EPIPE:
+                    self._reconnect()
+        return None
 
 
     def has(self):
@@ -151,26 +140,21 @@ class Metric(object):
 
 
     def read(self, startTime=None, endTime=None, pageSize=10):
+        if startTime is None:
+            startTime = datetime.datetime.utcnow() - datetime.timedelta(minutes=30)
+        elif not isinstance(startTime, datetime):
+            raise Exception('Datetime object is required as startTime!')
+        if endTime is None:
+            endTime = datetime.datetime.utcnow()
+        elif not isinstance(endTime, datetime):
+            raise Exception('Datetime object is required as endTime!')
         try:
-            if startTime is None:
-                startTime = datetime.datetime.utcnow() - datetime.timedelta(minutes=30)
-            elif not isinstance(startTime, datetime):
-                raise Exception('Datetime object is required as startTime!')
-            if endTime is None:
-                endTime = datetime.datetime.utcnow()
-            elif not isinstance(endTime, datetime):
-                raise Exception('Datetime object is required as endTime!')
-            request = self.client.projects().timeseries().list(
-                name=self.projectId,
-                filter='metric.type="{}"'.format(
-                    self.CUSTOM_METRIC_DOMAIN,
-                    self.metricType),
-                pageSize=pageSize,
-                interval_startTime=self._format_rfc3339(startTime),
-                interval_endTime=self._format_rfc3339(endTime),
-            )
-            response = request.execute(num_retries=3)
-            return response
+            query = self.client.query(
+                metric_type=self.fullName()
+            ).select_interval(
+                end_time=endTime,
+                start_time=startTime)
+            return list(query.iter(page_size=pageSize))
         except:
             return []
 
@@ -199,9 +183,7 @@ class Metric(object):
             raise Exception('Invalid value type for this point: {}, but required {}'.format(
                 type(value), self.valueType))
 
-        if startTime is None:
-            startTime = datetime.datetime.utcnow()
-        elif not isinstance(startTime, datetime):
+        if startTime is not None and not isinstance(startTime, datetime):
             raise Exception('Datetime object is required as startTime!')
 
         # Gauge requires same start and end time
@@ -209,29 +191,20 @@ class Metric(object):
             # Ignore endtime
             endTime = startTime
         else:
-            if endTime is None:
-                endTime = datetime.datetime.utcnow()
-            elif not isinstance(startTime, datetime):
+            if endTime is not None and not isinstance(startTime, datetime):
                 raise Exception('Datetime object is required as endTime!')
 
+        # valueType - not used variable
         self.points.append({
-            'interval': {
-                'startTime': self._format_rfc3339(startTime),
-                'endTime': self._format_rfc3339(endTime)
-            },
-            'value': {
-                valueType: value
-            }
+            'start_time': startTime,
+            'end_time': endTime,
+            'value': value,
         })
 
 
-    def write(self, value, startTime=None, endTime=None, metricLabels=None):
-        if metricLabels is None:
-            metricLabels = {}
-        else:
+    def write(self, value, startTime=None, endTime=None, metricLabels={}):
+        if len(metricLabels):
             metricLabels = metricLabels.copy()
-        # if len(self.points) == 0:
-        #     raise Exception('Missing at least one point of metric to write!')
 
         self.points = []
         self._addPoint(value, startTime, endTime)
@@ -239,43 +212,28 @@ class Metric(object):
         lastException = None
         for _repeat in range(6):
             try:
-                metricLabels.update({
-                    'compute.googleapis.com/resource_id': self.gce.instanceId()
-                })
-                resource = {}
+                resource = None
                 if self.gce.isInstance():
-                    resource = {
-                       'type': 'gce_instance',
-                       'labels': {
-                           'instance_id': self.gce.instanceId(),
-                           'zone': self.gce.instanceZone(),
-                       }
-                    }
-                timeseries_desc = {
-                    'metric': {
-                       'type': '{}/{}'.format(self.CUSTOM_METRIC_DOMAIN, self.metricType),
-                       'labels': metricLabels
-                    },
-                    'resource': resource,
-                    'points': self.points
-                }
-                # timeseries_data = {
-                    # 'timeseriesDesc': timeseries_desc,
-                    # 'point': self.points[0]
-                # }
-
-                request = self.client.projects().timeseries().create(
-                    name=self.projectId,
-                    body={"timeSeries": [timeseries_data, ]})
-                request.execute(num_retries=3)
+                    resource = self.client.resource(
+                        'gce_instance',
+                        labels={
+                            'instance_id': self.gce.instanceId(),
+                            'zone': self.gce.instanceZone(),
+                        }
+                    )
+                metric = self.client.metric(
+                    type_=self.fullName(),
+                    labels=metricLabels
+                )
+                # Point is dictionary which corresponds with write_points args
+                for point in self.points():
+                    self.client.write_point(metric, resource, **point)
                 self.points = []
                 return True
             except IOError as e:
                 sleep(_repeat * 2 + 1)
                 if e.errno == errno.EPIPE:
                     self._reconnect()
-                    credentials = GoogleCredentials.get_application_default()
                 lastException = e
         if lastException is not None:
             raise lastException
-

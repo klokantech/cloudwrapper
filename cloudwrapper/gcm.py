@@ -28,6 +28,10 @@ except ImportError:
 from .gce import GoogleComputeEngine
 
 
+from warnings import warn
+warn('The Google Cloud Monitoring API v2 is deprecated!\nUse gcm3.GcmConnection() instead.')
+
+
 class GcmConnection(object):
 
     def __init__(self):

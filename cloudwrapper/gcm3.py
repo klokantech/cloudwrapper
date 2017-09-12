@@ -154,9 +154,11 @@ class Metric(object):
             ).select_interval(
                 end_time=endTime,
                 start_time=startTime)
-            return list(query.iter(page_size=pageSize))
+            for ts in query.iter(page_size=pageSize):
+                for p in ts.points:
+                    yield p
         except:
-            return []
+            pass
 
 
     def _addPoint(self, value, startTime=None, endTime=None):
@@ -226,7 +228,7 @@ class Metric(object):
                     labels=metricLabels
                 )
                 # Point is dictionary which corresponds with write_points args
-                for point in self.points():
+                for point in self.points:
                     self.client.write_point(metric, resource, **point)
                 self.points = []
                 return True

@@ -29,4 +29,4 @@ idb -- Influx DB direct use (as SQL database).
 
 """
 
-__version__ = '1.12'
+__version__ = '1.13'

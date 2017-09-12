@@ -18,7 +18,7 @@ Wrappers around cloud services for Amazon, Google and private cloud.
  - Google cloud services:
    - *gce*: Google Compute Engine instance metadata.
    - *gcl*: Google Cloud Logging.
-   - *gcm*: Google Custom Metric (v2) [**DEPRECATED**](#13).
+   - *gcm*: Google Custom Metric (v2) [**DEPRECATED**](https://github.com/klokantech/cloudwrapper/issues/13).
    - *gcs*: Google Cloud Storage.
    - *gdm*: Google Deployment Manager using API v2.
    - *gps*: Google PubSub using GCE Authentication.
@@ -56,7 +56,7 @@ Wrappers around cloud services for Amazon, Google and private cloud.
 
 *WARNING*: Cloudwrapper uses new `requests` module, while old `pip` (from apt-get on Ubuntu 14.04, Debian 8) requires older `requests` module.
 
-URL for master (latest) version:
+The URL link for the master (latest) version:
 
 ```
 https://github.com/klokantech/cloudwrapper/archive/master.zip
@@ -64,20 +64,15 @@ https://github.com/klokantech/cloudwrapper/archive/master.zip
 
 ### Versions
 
+The latest released versions:
+
+ - v1.13 : `https://github.com/klokantech/cloudwrapper/archive/v1.13.zip`
  - v1.12 : `https://github.com/klokantech/cloudwrapper/archive/v1.12.zip`
  - v1.11 : `https://github.com/klokantech/cloudwrapper/archive/v1.11.zip`
  - v1.10 : `https://github.com/klokantech/cloudwrapper/archive/v1.10.zip`
- - v1.9 : `https://github.com/klokantech/cloudwrapper/archive/v1.9.zip`
- - v1.8 : `https://github.com/klokantech/cloudwrapper/archive/v1.8.zip`
- - v1.7 : `https://github.com/klokantech/cloudwrapper/archive/v1.7.zip`
- - v1.6 : `https://github.com/klokantech/cloudwrapper/archive/v1.6.zip`
- - v1.5 : `https://github.com/klokantech/cloudwrapper/archive/v1.5.zip`
- - v1.4 : `https://github.com/klokantech/cloudwrapper/archive/v1.4.zip`
- - v1.3 : `https://github.com/klokantech/cloudwrapper/archive/v1.3.zip`
- - v1.2 : `https://github.com/klokantech/cloudwrapper/archive/v1.2.zip`
- - v1.1 : `https://github.com/klokantech/cloudwrapper/archive/v1.1.zip`
- - v1.0 : `https://github.com/klokantech/cloudwrapper/archive/v1.0.zip`
 
+The list of all released versions are in the [Releases](https://github.com/klokantech/cloudwrapper/releases) section of this repository.
+The link for older version has this format: `https://github.com/klokantech/cloudwrapper/archive/vX.Y.zip`, where `vX.Y` is the tag on this repository.
 
 
 ### Python2
@@ -85,7 +80,7 @@ https://github.com/klokantech/cloudwrapper/archive/master.zip
 ```bash
 apt-get install python-setuptools
 easy_install pip
-pip install https://github.com/klokantech/cloudwrapper/archive/v1.12.zip
+pip install https://github.com/klokantech/cloudwrapper/archive/v1.13.zip
 ```
 
 ### Python3
@@ -93,7 +88,7 @@ pip install https://github.com/klokantech/cloudwrapper/archive/v1.12.zip
 ```bash
 apt-get install python3-setuptools
 easy_install3 pip
-pip3 install https://github.com/klokantech/cloudwrapper/archive/v1.12.zip
+pip3 install https://github.com/klokantech/cloudwrapper/archive/v1.13.zip
 ```
 
 

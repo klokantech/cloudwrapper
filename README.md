@@ -12,40 +12,42 @@ Wrappers around cloud services for Amazon, Google and private cloud.
    - *s3*: Amazon S3 storage.
    - *sqs*: Amazon SQS queues.
    - *cwl*: Amazon CloudWatch logs.
-
    - **required packages**:
       - `boto==2.48.0`
 
  - Google cloud services:
    - *gce*: Google Compute Engine instance metadata.
    - *gcl*: Google Cloud Logging.
-   - *gcm*: Google Custom Metric (v2).
-   - *gcm3*: Google Custom Metric (v3).
+   - *gcm*: Google Custom Metric (v2) [**DEPRECATED**](#13).
    - *gcs*: Google Cloud Storage.
    - *gdm*: Google Deployment Manager using API v2.
    - *gps*: Google PubSub using GCE Authentication.
    - *gtq*: Google Task Pull Queues.
-
    - **required packages**:
-      - `requests==2.9.1`
       - `gcloud==0.13.0`
-      - `oauth2client==2.0.2`
-      - `google-api-python-client==1.5.1`
       - `gcloud_taskqueue==0.1.2`
+      - `google-api-python-client==1.5.1`
+      - `oauth2client==2.0.2`
       - `pyyaml==3.11`
+      - `requests==2.9.1`
+
+   - *gcm3*: Google Custom Metric (v3).
+   - **required packages**:
+      - `google-cloud-monitoring==0.27.0`
+      - `google-cloud-core==0.27.1`
+      - `oauth2client==2.0.2`
+      - `requests==2.18.4`
 
  - BeansTalkd:
    - *btq*: BeansTalkd Queues.
-
    - **required packages**:
-      - `pyyaml==3.11`
       - `beanstalkc3==0.4.0`
+      - `pyyaml==3.11`
 
  - InfluxDB:
    - *idm*: Influx DB Metric.
    - *idl*: Influx DB Logging.
    - *idb*: Influx DB direct use (as SQL database).
-
    - **required packages**:
       - `influxdb==3.0.0`
 

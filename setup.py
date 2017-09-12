@@ -26,7 +26,7 @@ extras_requires = {
         'pyyaml==3.11',
         'requests==2.9.1',
     ],
-    ['gcm3']: [
+    'gcm3': [
         'google-cloud-monitoring==0.27.0',
         'google-cloud-core==0.27.1',
         'oauth2client==2.0.2',

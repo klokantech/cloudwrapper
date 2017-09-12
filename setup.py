@@ -16,15 +16,21 @@ install_requires = [
 
 extras_requires = {
     'amazon': [
-        'boto==2.39.0',
+        'boto==2.48.0',
     ],
     'google': [
-        'requests==2.9.1',
         'gcloud==0.13.0',
-        'oauth2client==2.0.2',
-        'google-api-python-client==1.5.1',
         'gcloud_taskqueue==0.1.2',
+        'google-api-python-client==1.5.1',
+        'oauth2client==2.0.2',
         'pyyaml==3.11',
+        'requests==2.9.1',
+    ],
+    ['gcm3']: [
+        'google-cloud-monitoring==0.27.0',
+        'google-cloud-core==0.27.1',
+        'oauth2client==2.0.2',
+        'requests==2.18.4'
     ],
     'beanstalkd': [
         'pyyaml==3.11',

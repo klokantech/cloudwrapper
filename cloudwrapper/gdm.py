@@ -55,7 +55,7 @@ class Deployment(object):
         self.deploymentName = name
         self.gce = GoogleComputeEngine()
         if projectId is None:
-            #projectId = 'projects/' + self.gce.projectId()
+            # projectId = 'projects/' + self.gce.projectId()
             projectId = self.gce.projectId()
         elif 'projects/' in projectId:
             projectId = projectId[10:]
@@ -115,7 +115,7 @@ class Deployment(object):
                     preview=preview
                 ).execute(num_retries=6)
         except Exception as ex:
-           raise Exception('Failed to create deployment {}: {}'.format(self.deploymentName, ex))
+            raise Exception('Failed to create deployment {}: {}'.format(self.deploymentName, ex))
 
         return response
 
@@ -141,6 +141,15 @@ class Deployment(object):
         except Exception:
             pass
         return True if response is not None else False
+
+
+    def has_error(self):
+        deploymentState = self.get()
+        if not deploymentState:
+            return True
+        operation = deploymentState.get('operation', {
+            'error': 'missing operation'})
+        return 'error' in operation
 
 
     def delete(self):
@@ -243,4 +252,3 @@ class Deployment(object):
             raise
         size = int(response.get('targetSize'))
         return size
-

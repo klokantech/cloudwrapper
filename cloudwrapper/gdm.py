@@ -5,12 +5,6 @@ Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
 Author: Martin Mikita <martin.mikita@klokantech.com>
 """
 
-import json
-import errno
-import datetime
-
-from time import sleep
-
 try:
     import yaml
     from googleapiclient.discovery import build
@@ -38,14 +32,16 @@ class GdmConnection(object):
         self.client_ce = build('compute', 'v1', credentials=self.credentials)
 
 
-    def deployment(self, name, projectId=None):
-        return Deployment(name, projectId, self.client_dm, self.client_ce, self.credentials)
+    def deployment(self, name, project_id=None):
+        return Deployment(name, project_id, self.client_dm,
+                          self.client_ce, self.credentials)
 
 
 class Deployment(object):
 
     def _format_rfc3339(self, dt):
-        """Formats a datetime per RFC 3339.
+        """Format a datetime per RFC 3339.
+
         :param dt: Datetime instanec to format, defaults to utcnow
         """
         return dt.isoformat("T") + "Z"
@@ -88,7 +84,6 @@ class Deployment(object):
     def create(self, preview=None):
         content = {"resources": self.resources}
 
-
         body = {
             "target": {
                 "config": {
@@ -98,7 +93,7 @@ class Deployment(object):
             "name": self.deploymentName
         }
         try:
-            if self.has():
+            if self.exists():
                 deploymentState = self.get()
                 fingerprint = deploymentState.get('fingerprint')
                 body.update({"fingerprint": fingerprint})
@@ -134,21 +129,24 @@ class Deployment(object):
         return None
 
 
-    def has(self):
+    def exists(self):
         response = None
         try:
             response = self.get()
         except Exception:
             pass
-        return True if response is not None else False
+        return response is not None
 
 
     def has_error(self):
         deploymentState = self.get()
         if not deploymentState:
             return True
+        # Deployment object should have 'operation' key
+        # with an 'error' key in case of the invalid deployment
         operation = deploymentState.get('operation', {
-            'error': 'missing operation'})
+            'error': 'missing operation'
+        })
         return 'error' in operation
 
 
@@ -224,7 +222,8 @@ class Deployment(object):
 
 
     def addInstanceManagedAutoscalerMetric(self, name, groupName, numRange,
-        metricName, metricTarget, metricTargetType, coolDown=300):
+                                           metricName, metricTarget,
+                                           metricTargetType, coolDown=300):
         utilization = {
             "customMetricUtilizations": [
                 {
@@ -238,7 +237,7 @@ class Deployment(object):
 
 
     def runningInstances(self, groupName):
-        if not self.has():
+        if not self.exists():
             return 0
         try:
             request = self.client_ce.instanceGroupManagers().get(

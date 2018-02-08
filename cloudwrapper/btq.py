@@ -6,6 +6,7 @@ Author: Martin Mikita <martin.mikita@klokantech.com>
 
 import json
 import sys
+import errno
 
 if sys.version[0] == '2':
     from Queue import Empty
@@ -100,10 +101,15 @@ class Queue(BaseQueue):
 
 
     def qsize(self):
-        """Get size of ready jobs in current tube
+        """Get size of ready and reserved jobs in current tube
         """
         stats = self._wrap_handle('stats_tube', self.name)
-        return stats['current-jobs-ready'] if 'current-jobs-ready' in stats else 0
+        num = 0
+        if 'current-jobs-ready' in stats:
+            num += stats['current-jobs-ready']
+        if 'current-jobs-reserved' in stats:
+            num += stats['current-jobs-reserved']
+        return num
 
 
     def put(self, item, block=True, timeout=None, delay=0, ttr=3600, priority=DEFAULT_PRIORITY):
@@ -194,4 +200,3 @@ class Queue(BaseQueue):
         # No available task, cache this response for 5 minutes
         self.available_timestamp = now + 300 # 5 minutes
         return False
-

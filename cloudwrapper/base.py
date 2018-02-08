@@ -4,7 +4,7 @@ Base classes.
 BaseQueue
 BaseBucket
 
-Copyright (C) 2017 Klokan Technologies GmbH (http://www.klokantech.com/)
+Copyright (C) 2018 Klokan Technologies GmbH (http://www.klokantech.com/)
 """
 
 

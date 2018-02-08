@@ -1,6 +1,6 @@
 """Wrappers around cloud services for Amazon, Google and private cloud.
 
-Copyright (C) 2016-2017 Klokan Technologies GmbH (http://www.klokantech.com/)
+Copyright (C) 2016-2018 Klokan Technologies GmbH (http://www.klokantech.com/)
 Maintainer: Martin Mikita, martin.mikita@klokantech.com
 
 Modules:
@@ -29,4 +29,4 @@ idb -- Influx DB direct use (as SQL database).
 
 """
 
-__version__ = '1.14'
+__version__ = '1.15'

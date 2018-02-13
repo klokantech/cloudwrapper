@@ -8,16 +8,16 @@ import json
 import sys
 import errno
 
+from time import sleep, time
+from .base import BaseQueue
+
 if sys.version[0] == '2':
     from Queue import Empty
 else:
     from queue import Empty
 
-from time import sleep, time
-from .base import BaseQueue
-
 try:
-    import yaml
+    import yaml  # noqa
     from beanstalkc import Connection, SocketError, DEFAULT_PRIORITY
 except ImportError:
     from warnings import warn
@@ -105,6 +105,8 @@ class Queue(BaseQueue):
         """
         stats = self._wrap_handle('stats_tube', self.name)
         num = 0
+        if 'current-jobs-urgent' in stats:
+            num += stats['current-jobs-urgent']
         if 'current-jobs-ready' in stats:
             num += stats['current-jobs-ready']
         if 'current-jobs-reserved' in stats:
@@ -158,10 +160,18 @@ class Queue(BaseQueue):
         self._wrap_handle('touch', self.message.jid)
 
 
-    def update(self):
+    def update(self, lease_time=None):
         """Update TTR (TimeToRelease) for a formerly enqueued task.
         """
         self.touch()
+
+
+    def release(self, delay=300, priority=0):
+        """Release job with optional delay back to ready queue."""
+        if self.message is None:
+            raise Exception('BtqConnection::Queue::task_done() - no message to acknowledge.')
+        self._wrap_handle('release', self.message.jid, priority, delay)
+        self.message = None
 
 
     def has_available(self):
@@ -198,5 +208,5 @@ class Queue(BaseQueue):
         if int(stats['current-jobs-ready'] if 'current-jobs-ready' in stats else 0) > 0:
             return True
         # No available task, cache this response for 5 minutes
-        self.available_timestamp = now + 300 # 5 minutes
+        self.available_timestamp = now + 300  # 5 minutes
         return False

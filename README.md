@@ -66,11 +66,11 @@ https://github.com/klokantech/cloudwrapper/archive/master.zip
 
 The latest released versions:
 
+ - v1.16 : `https://github.com/klokantech/cloudwrapper/archive/v1.16.zip`
  - v1.15 : `https://github.com/klokantech/cloudwrapper/archive/v1.15.zip`
  - v1.14 : `https://github.com/klokantech/cloudwrapper/archive/v1.14.zip`
  - v1.13 : `https://github.com/klokantech/cloudwrapper/archive/v1.13.zip`
  - v1.12 : `https://github.com/klokantech/cloudwrapper/archive/v1.12.zip`
- - v1.11 : `https://github.com/klokantech/cloudwrapper/archive/v1.11.zip`
 
 The list of all released versions are in the [Releases](https://github.com/klokantech/cloudwrapper/releases) section of this repository.
 The link for older version has this format: `https://github.com/klokantech/cloudwrapper/archive/vX.Y.zip`, where `vX.Y` is the tag on this repository.
@@ -81,7 +81,7 @@ The link for older version has this format: `https://github.com/klokantech/cloud
 ```bash
 apt-get install python-setuptools
 easy_install pip
-pip install https://github.com/klokantech/cloudwrapper/archive/v1.15.zip
+pip install https://github.com/klokantech/cloudwrapper/archive/v1.16.zip
 ```
 
 ### Python3
@@ -89,7 +89,7 @@ pip install https://github.com/klokantech/cloudwrapper/archive/v1.15.zip
 ```bash
 apt-get install python3-setuptools
 easy_install3 pip
-pip3 install https://github.com/klokantech/cloudwrapper/archive/v1.15.zip
+pip3 install https://github.com/klokantech/cloudwrapper/archive/v1.16.zip
 ```
 
 

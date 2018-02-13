@@ -105,8 +105,6 @@ class Queue(BaseQueue):
         """
         stats = self._wrap_handle('stats_tube', self.name)
         num = 0
-        if 'current-jobs-urgent' in stats:
-            num += stats['current-jobs-urgent']
         if 'current-jobs-ready' in stats:
             num += stats['current-jobs-ready']
         if 'current-jobs-reserved' in stats:

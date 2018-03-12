@@ -31,13 +31,14 @@ except ImportError:
 
 class BtqConnection(object):
 
-    def __init__(self, host='localhost', port=11300):
+    def __init__(self, host='localhost', port=11300, max_size=65300):
         self.host = host
         self.port = int(port)
+        self.max_size = max(int(max_size or 0), 65300)
 
 
     def queue(self, name):
-        return Queue(Connection(self.host, self.port), name)
+        return Queue(Connection(self.host, self.port), name, self.max_size)
 
 
 class Queue(BaseQueue):
@@ -50,9 +51,10 @@ class Queue(BaseQueue):
     parameter, and others, are configured outside this module.
     """
 
-    def __init__(self, handle, name):
+    def __init__(self, handle, name, max_size):
         self.handle = handle
         self.name = name
+        self.max_size = max_size
         self.message = None
         self.available_timestamp = None
 
@@ -93,6 +95,30 @@ class Queue(BaseQueue):
         return None
 
 
+    def verify_task(self, task):
+        try:
+            self.serialize_task(task)
+            return True
+        except:
+            return False
+
+
+    def serialize_task(self, task):
+        task_s = json.dumps(task, separators=(',', ':'))
+        if len(task_s) > self.max_size:
+            raise Exception('This task is larger than allowed size {}.'.format(
+                self.max_size))
+        return task_s
+
+
+    def deserialize_task(self, task):
+        try:
+            task_o = json.loads(task)
+            return task_o
+        except:
+            return task
+
+
     def setReconnectOptions(self, attempts, timeout):
         """Set reconnect options: number of attempts, timeout before reconnect [s]
         """
@@ -122,7 +148,7 @@ class Queue(BaseQueue):
         """
         if not (block and timeout is None):
             raise Exception('BtqConnection::Queue::put() - Block and timeout must have default values.')
-        self._wrap_handle('put', json.dumps(item, separators=(',', ':')), ttr=ttr, delay=delay, priority=priority)
+        self._wrap_handle('put', self.serialize_task(item), ttr=ttr, delay=delay, priority=priority)
 
 
     def get(self, block=True, timeout=None):
@@ -135,7 +161,7 @@ class Queue(BaseQueue):
         self.message = self._wrap_handle('reserve', timeout=timeout)
         if self.message is None:
             raise Empty
-        return json.loads(self.message.body)
+        return self.deserialize_task(self.message.body)
 
 
     def task_done(self):

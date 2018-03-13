@@ -135,6 +135,8 @@ class Queue(BaseQueue):
             num += stats['current-jobs-ready']
         if 'current-jobs-reserved' in stats:
             num += stats['current-jobs-reserved']
+        if 'current-jobs-delayed' in stats:
+            num += stats['current-jobs-delayed']
         return num
 
 

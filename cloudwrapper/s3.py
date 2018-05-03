@@ -8,6 +8,7 @@ import os
 
 try:
     from boto.s3 import connect_to_region, connection
+    from boto.exceptions import S3ResponseError
 except ImportError:
     from warnings import warn
     install_modules = [
@@ -39,9 +40,15 @@ class S3Connection(object):
                 aws_secret_access_key=secret)
 
 
-    def bucket(self, name):
-        return Bucket(self.connection.get_bucket(name))
-
+    def bucket(self, name, create=False):
+        for _ in range(6):
+            try:
+                return Bucket(self.connection.get_bucket(name))
+            except S3ResponseError as se:
+                if se.status == 404 and create:
+                    self.connection.create_bucket(name)
+                    continue
+                raise
 
 
 class Bucket(object):

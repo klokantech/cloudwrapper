@@ -11,7 +11,7 @@ from time import sleep
 from .base import BaseBucket
 
 try:
-    from gcloud import storage
+    from gcloud import storage, exceptions
 except ImportError:
     from warnings import warn
     install_modules = [
@@ -35,10 +35,15 @@ class GcsConnection(object):
         self.connection = storage.Client()
 
 
-    def bucket(self, name):
+    def bucket(self, name, create=False):
         for _repeat in range(6):
             try:
                 return Bucket(self.connection.get_bucket(name))
+            except (exceptions.NotFound) as e:
+                if create:
+                    self.connection.create_bucket(name)
+                    continue
+                raise
             except (IOError, BadStatusLine) as e:
                 sleep(_repeat * 2 + 1)
                 if e.errno == errno.EPIPE:

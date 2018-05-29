@@ -79,7 +79,7 @@ class Metric(object):
         return '{}/{}'.format(self.CUSTOM_METRIC_DOMAIN, self.metricType)
 
 
-    def create(self, metricKind, valueType='DOUBLE', description='', displayName=None):
+    def create(self, metricKind, valueType='DOUBLE', description='', displayName=None, labels=()):
         if displayName is None:
             displayName = self.metricType.replace('/', ' ')
         descriptor = self.client.metric_descriptor(
@@ -88,7 +88,8 @@ class Metric(object):
             value_type=valueType,
             description=description,
             display_name=displayName,
-            unit='items'
+            unit='items',
+            labels=labels
         )
         # 'labels': [
         #     {

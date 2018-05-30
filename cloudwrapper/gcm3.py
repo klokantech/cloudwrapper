@@ -82,6 +82,16 @@ class Metric(object):
     def create(self, metricKind, valueType='DOUBLE', description='', displayName=None, labels=()):
         if displayName is None:
             displayName = self.metricType.replace('/', ' ')
+        for i, l in enumerate(labels):
+            if not isinstance(l, monitoring.LabelDescriptor):
+                labels[i] = monitoring.LabelDescriptor._from_dict(l)
+            # Verify value type
+            if labels[i].value_type not in ('STRING', 'INT64', 'BOOL'):
+                raise Exception('Unsupported value type {} for label {}/{}.'.format(
+                    labels[i].value_type, self.metricType, labels[i].key))
+        if valueType not in ('BOOL', 'INT64', 'DOUBLE', 'STRING', 'DISTRIBUTION'):
+            raise Exception('Unsupported value type {} of the metric {}.'.format(
+                valueType, self.metricType))
         descriptor = self.client.metric_descriptor(
             self.fullName(),
             metric_kind=metricKind,

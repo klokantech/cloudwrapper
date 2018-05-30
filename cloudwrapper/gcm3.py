@@ -109,6 +109,7 @@ class Metric(object):
         #     }
         # ]
 
+        last_ex = ''
         for _repeat in range(6):
             try:
                 descriptor.create()
@@ -117,13 +118,15 @@ class Metric(object):
                     break
                 raise Exception()
             except NotFound:
+                sleep(_repeat * 2 + 1)
                 continue
             except Exception as e:
+                last_ex = e
                 sleep(_repeat * 2 + 1)
                 if hasattr(e, 'errno') and e.errno == errno.EPIPE:
                     self._reconnect()
         else:
-            raise Exception('Failed to create custom metric.')
+            raise Exception('Failed to create custom metric: {}.'.format(last_ex))
 
         return metric
 

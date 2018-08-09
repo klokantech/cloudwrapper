@@ -23,10 +23,10 @@ except ImportError:
 
 try:
     # python2
-    from httplib import BadStatusLine
+    from httplib import BadStatusLine, ResponseNotReady
 except ImportError:
     # python3
-    from http.client import BadStatusLine
+    from http.client import BadStatusLine, ResponseNotReady
 
 
 class GcsConnection(object):
@@ -44,7 +44,7 @@ class GcsConnection(object):
                     self.connection.create_bucket(name)
                     continue
                 raise
-            except (IOError, BadStatusLine) as e:
+            except (IOError, BadStatusLine, ResponseNotReady) as e:
                 sleep(_repeat * 2 + 1)
                 if e.errno == errno.EPIPE:
                     self.connection = storage.Client()

@@ -1,14 +1,15 @@
 """Amazon S3.
 
-Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
+Copyright (C) 2019 Klokan Technologies GmbH (https://www.klokantech.com/)
 Author: Vaclav Klusak <vaclav.klusak@klokantech.com>
+Author: Martin Mikita <martin.mikita@klokantech.com>
 """
 
 import os
 
 try:
     from boto.s3 import connect_to_region, connection
-    from boto.exceptions import S3ResponseError
+    from boto.exception import S3ResponseError
 except ImportError:
     from warnings import warn
     install_modules = [

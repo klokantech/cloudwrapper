@@ -43,6 +43,11 @@ class IdbConnection(object):
         return Table(self.client, name, tags)
 
 
+    def drop(self, name, silent=True):
+        Table(self.client, name).drop(silent)
+        return True
+
+
 
 class Table(object):
 

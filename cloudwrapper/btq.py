@@ -41,6 +41,12 @@ class BtqConnection(object):
         return Queue(Connection(self.host, self.port), name, self.max_size)
 
 
+    def clear(self, name):
+        q = self.queue(name)
+        q.clear()
+
+
+
 class Queue(BaseQueue):
     """
     BeansTalkd Queues
@@ -236,3 +242,12 @@ class Queue(BaseQueue):
         # No available task, cache this response for 5 minutes
         self.available_timestamp = now + 300  # 5 minutes
         return False
+
+
+    def clear(self):
+        while True:
+            try:
+                self.get(block=False, timeout=0)
+            except Empty:
+                break
+            self.task_done()

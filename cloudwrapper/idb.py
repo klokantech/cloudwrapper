@@ -44,14 +44,14 @@ class IdbConnection(object):
 
 
     def drop(self, name, silent=True):
-        Table(self.client, name).drop(silent)
+        self.table(self.client, name).drop(silent)
         return True
 
 
 
 class Table(object):
 
-    def __init__(self, client, name, tags):
+    def __init__(self, client, name, tags=None):
         """
         Create Table object with name, using client connection.
         """

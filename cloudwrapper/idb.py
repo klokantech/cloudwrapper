@@ -44,7 +44,7 @@ class IdbConnection(object):
 
 
     def drop(self, name, silent=True):
-        self.table(self.client, name).drop(silent)
+        self.table(name).drop(silent)
         return True
 
 

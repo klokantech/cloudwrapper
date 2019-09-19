@@ -100,12 +100,34 @@ class Bucket(BaseBucket):
         for _repeat in range(6):
             try:
                 key.download_to_filename(target)
+                break
             except (IOError, BadStatusLine) as e:
                 sleep(_repeat * 2 + 1)
                 self._reconnect(self.name)
                 key = self.handle.get_blob(source)
             except:
                 pass
+
+
+    def rename(self, source, target):
+        key = self.handle.get_blob(source)
+        if key is None:
+            # Already renamed
+            if self.has(target):
+                return True
+            raise Exception("Object {} not exists in bucket {}.".format(
+                source, self.handle.id))
+        for _repeat in range(6):
+            try:
+                self.handle.rename_blob(key, target)
+                break
+            except:
+                sleep(_repeat * 2 + 1)
+                self._reconnect(self.name)
+                key = self.handle.get_blob(source)
+                if key is None:
+                    return self.has(target)
+        return self.has(target)
 
 
     def has(self, source):

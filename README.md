@@ -24,25 +24,25 @@ Wrappers around cloud services for Amazon, Google and private cloud.
    - *gps*: Google PubSub using GCE Authentication.
    - *gtq*: Google Task Pull Queues.
    - **required packages**:
-      - `gcloud==0.13.0`
+      - `gcloud==0.18.3`
       - `gcloud_taskqueue==0.1.2`
-      - `google-api-python-client==1.5.1`
-      - `oauth2client==2.0.2`
-      - `pyyaml==3.11`
-      - `requests==2.9.1`
+      - `google-api-python-client==1.7.11`
+      - `oauth2client==4.1.3`
+      - `PyYAML==5.1.2`
+      - `requests==2.22.0`
 
    - *gcm3*: Google Custom Metric (v3).
    - **required packages**:
-      - `google-cloud-monitoring==0.27.0`
-      - `google-cloud-core==0.27.1`
-      - `oauth2client==2.0.2`
-      - `requests==2.18.4`
+      - `google-cloud-monitoring==0.33.0`
+      - `google-cloud-core==1.0.3`
+      - `oauth2client==4.1.3`
+      - `requests==2.22.0`
 
  - BeansTalkd:
    - *btq*: BeansTalkd Queues.
    - **required packages**:
       - `beanstalkc3==0.4.0`
-      - `pyyaml==3.11`
+      - `PyYAML==5.1.2`
 
  - InfluxDB:
    - *idm*: Influx DB Metric.
@@ -66,6 +66,7 @@ https://github.com/klokantech/cloudwrapper/archive/master.zip
 
 The latest released versions:
 
+ - v2.0 : `https://github.com/klokantech/cloudwrapper/archive/v2.0.zip`
  - v1.24 : `https://github.com/klokantech/cloudwrapper/archive/v1.24.zip`
  - v1.23 : `https://github.com/klokantech/cloudwrapper/archive/v1.23.zip`
  - v1.22 : `https://github.com/klokantech/cloudwrapper/archive/v1.22.zip`
@@ -81,7 +82,7 @@ The link for older version has this format: `https://github.com/klokantech/cloud
 ```bash
 apt-get install python-setuptools
 easy_install pip
-pip install https://github.com/klokantech/cloudwrapper/archive/v1.24.zip
+pip install https://github.com/klokantech/cloudwrapper/archive/v2.0.zip
 ```
 
 ### Python3
@@ -89,7 +90,7 @@ pip install https://github.com/klokantech/cloudwrapper/archive/v1.24.zip
 ```bash
 apt-get install python3-setuptools
 easy_install3 pip
-pip3 install https://github.com/klokantech/cloudwrapper/archive/v1.24.zip
+pip3 install https://github.com/klokantech/cloudwrapper/archive/v2.0.zip
 ```
 
 
@@ -98,7 +99,7 @@ pip3 install https://github.com/klokantech/cloudwrapper/archive/v1.24.zip
 
 ### BeansTalkd Queues
 
-Install required packages: `pip install beanstalkc3==0.4.0 pyyaml==3.11`
+Install required packages: `pip install beanstalkc3==0.4.0 PyYAML==5.1.2`
 
 ```python
 from cloudwrapper.btq import BtqConnection

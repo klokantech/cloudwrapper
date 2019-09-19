@@ -19,21 +19,21 @@ extras_requires = {
         'boto==2.48.0',
     ],
     'google': [
-        'gcloud==0.13.0',
+        'gcloud==0.18.3',
         'gcloud_taskqueue==0.1.2',
-        'google-api-python-client==1.5.1',
-        'oauth2client==2.0.2',
-        'pyyaml==3.11',
-        'requests==2.9.1',
+        'google-api-python-client==1.7.11',
+        'oauth2client==4.1.3',
+        'PyYAML==5.1.2',
+        'requests==2.22.0',
     ],
     'gcm3': [
-        'google-cloud-monitoring==0.27.0',
-        'google-cloud-core==0.27.1',
-        'oauth2client==2.0.2',
-        'requests==2.18.4'
+        'google-cloud-monitoring==0.33.0',
+        'google-cloud-core==1.0.3',
+        'oauth2client==4.1.3',
+        'requests==2.22.0'
     ],
     'beanstalkd': [
-        'pyyaml==3.11',
+        'PyYAML==5.1.2',
         'beanstalkc3==0.4.0',
     ],
     'influxdb': [

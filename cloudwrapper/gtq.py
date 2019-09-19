@@ -8,12 +8,14 @@ import json
 import errno
 import sys
 
+from time import sleep, time
+from .base import BaseQueue
+
 if sys.version[0] == '2':
     from Queue import Empty
 else:
     from queue import Empty
 
-from time import sleep, time
 try:
     from gcloud_taskqueue import Taskqueue, Client
     from gcloud.exceptions import GCloudError
@@ -23,14 +25,12 @@ except ImportError:
     from warnings import warn
     install_modules = [
         'gcloud_taskqueue==0.1.2',
-        'gcloud==0.13.0',
-        'google-api-python-client==1.5.1',
-        'oauth2client==2.0.2',
+        'gcloud==0.18.3',
+        'google-api-python-client==1.7.11',
+        'oauth2client==4.1.3',
     ]
     warn('cloudwrapper.gtq requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
     raise
-
-from .base import BaseQueue
 
 
 class GtqConnection(object):

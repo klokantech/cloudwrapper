@@ -15,7 +15,7 @@ try:
 except ImportError:
     from warnings import warn
     install_modules = [
-        'gcloud==0.13.0',
+        'gcloud==0.18.3',
     ]
     warn('cloudwrapper.gcs requires these packages:\n  - {}'.format(
         '\n  - '.join(install_modules)))

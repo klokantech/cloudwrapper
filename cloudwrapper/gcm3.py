@@ -12,16 +12,15 @@ from time import sleep
 
 try:
     from google.cloud import monitoring
-    from google.api.core.exceptions import GoogleAPIError
     from google.cloud.exceptions import NotFound
 except ImportError:
     from warnings import warn
     install_modules = [
-        'google-cloud-monitoring==0.27.0',
-        'google-cloud-core==0.27.1',
-        'google-auth==1.0.2',
-        'oauth2client==2.0.2',
-        'requests==2.18.4',
+        'google-cloud-monitoring==0.33.0',
+        'google-cloud-core==1.0.3',
+        'google-auth==1.6.3',
+        'oauth2client==4.1.3',
+        'requests==2.22.0',
     ]
     warn('cloudwrapper.gcm3 requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
     raise

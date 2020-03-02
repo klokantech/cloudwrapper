@@ -132,7 +132,15 @@ class Bucket(BaseBucket):
 
     def has(self, source):
         key = self.handle.blob(source)
-        return key.exists()
+        for _repeat in range(6):
+            try:
+                return key.exists()
+            except:
+                sleep(_repeat * 2 + 1)
+                self._reconnect(self.name)
+                key = self.handle.blob(source)
+        else:
+            return False
 
 
     def list(self, prefix=None):

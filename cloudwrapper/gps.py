@@ -4,8 +4,6 @@ Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
 Author: Martin Mikita <martin.mikita@klokantech.com>
 """
 
-import os
-import errno
 import base64
 import json
 import sys
@@ -59,13 +57,19 @@ class Topic(object):
         self.projectId = projectId
         self.topicId = 'projects/{}/topics/{}'.format(self.projectId, name)
 
+    def _encode(self, message):
+        msg_json = json.dumps(message, separators=(',', ':'))
+        try:
+            return base64.b64encode(msg_json)
+        except TypeError:
+            return base64.b64encode(msg_json.encode('utf-8')).decode('utf-8')
+
 
     def publish(self, message):
-        msg = base64.b64encode( json.dumps(message, separators=(',', ':')) )
         body = {
             "messages": [
                 {
-                    "data": msg
+                    "data": self._encode(message)
                 },
             ]
         }
@@ -96,6 +100,14 @@ class Subscription(object):
         self.subscriptionId = 'projects/{}/subscriptions/{}'.format(self.projectId, name)
         self.available_timestamp = None
 
+    def _decode(self, message):
+        msg_json = json.dumps(message, separators=(',', ':'))
+        try:
+            msg_json = base64.b64decode(message)
+        except TypeError:
+            msg_json = base64.b64decode(message.encode('utf-8')).decode('utf-8')
+        return json.loads(msg_json)
+
 
     def list(self, maxCount=100):
         """Pull list of messages (default 100) from the subscriber.
@@ -112,7 +124,7 @@ class Subscription(object):
             for message in receivedMessages:
                 msg = message.get('message')
                 if msg:
-                    yield json.loads( base64.b64decode( str(msg.get('data')) ) )
+                    yield self._decode(str(msg.get('data')))
 
 
     def _get_message(self, block=True):
@@ -151,7 +163,7 @@ class Subscription(object):
         if not data:
             raise Empty
 
-        return json.loads( base64.b64decode( str(data) ) )
+        return self._decode(str(data))
 
 
     def get(self, block=True, timeout=None):
@@ -237,4 +249,3 @@ class Subscription(object):
         # No available task, cache this response for 5 minutes
         self.available_timestamp = now + 300 # 5 minutes
         return False
-

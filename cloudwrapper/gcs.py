@@ -57,7 +57,7 @@ class GcsConnection(object):
                 for bucket in self.connection.list_buckets():
                     buckets.append(bucket.name)
                 break
-            except (IOError, BadStatusLine) as e:
+            except (IOError, BadStatusLine, exceptions.GCloudError) as e:
                 sleep(_repeat * 2 + 1)
                 if e.errno == errno.EPIPE:
                     self.connection = storage.Client()
@@ -84,7 +84,7 @@ class Bucket(BaseBucket):
                 key = self.handle.blob(target, chunk_size=self.CHUNK_SIZE)
                 key.upload_from_filename(source)
                 break
-            except (IOError, BadStatusLine) as e:
+            except (IOError, BadStatusLine, exceptions.GCloudError) as e:
                 sleep(_repeat * 2 + 1)
                 self._reconnect(self.name)
             except:
@@ -101,7 +101,7 @@ class Bucket(BaseBucket):
             try:
                 key.download_to_filename(target)
                 break
-            except (IOError, BadStatusLine) as e:
+            except (IOError, BadStatusLine, exceptions.GCloudError) as e:
                 sleep(_repeat * 2 + 1)
                 self._reconnect(self.name)
                 key = self.handle.get_blob(source)
@@ -149,8 +149,13 @@ class Bucket(BaseBucket):
 
 
     def size(self, source):
-        key = self.handle.get_blob(source)
-        return key.size if key is not None else 0
+        for _repeat in range(6):
+            try:
+                key = self.handle.get_blob(source)
+                return key.size if key is not None else 0
+            except (IOError, BadStatusLine, exceptions.GCloudError) as e:
+                sleep(_repeat * 2 + 1)
+                self._reconnect(self.name)
 
 
     def is_public(self, source):
@@ -160,7 +165,7 @@ class Bucket(BaseBucket):
                 if key is None:
                     return False
                 return 'READER' in key.acl.all().get_roles()
-            except (IOError, BadStatusLine) as e:
+            except (IOError, BadStatusLine, exceptions.GCloudError) as e:
                 sleep(_repeat * 2 + 1)
                 self._reconnect(self.name)
             except:
@@ -174,7 +179,7 @@ class Bucket(BaseBucket):
                 if key and not ('READER' in key.acl.all().get_roles()):
                     key.make_public()
                 break
-            except (IOError, BadStatusLine) as e:
+            except (IOError, BadStatusLine, exceptions.GCloudError) as e:
                 sleep(_repeat * 2 + 1)
                 self._reconnect(self.name)
             except:

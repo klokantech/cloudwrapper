@@ -1,7 +1,7 @@
 """
 Google Cloud Deployment Manager using API v2.
 
-Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
+Copyright (C) 2016-2020 Klokan Technologies GmbH (http://www.klokantech.com/)
 Author: Martin Mikita <martin.mikita@klokantech.com>
 """
 
@@ -18,7 +18,8 @@ except ImportError:
         'oauth2client==2.0.2',
         'requests==2.9.1',
     ]
-    warn('cloudwrapper.gdm requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
+    warn('cloudwrapper.gdm requires these packages:\n  - {}'.format(
+        '\n  - '.join(install_modules)))
     raise
 
 from .gce import GoogleComputeEngine
@@ -28,9 +29,12 @@ class GdmConnection(object):
 
     def __init__(self):
         self.credentials = GoogleCredentials.get_application_default()
-        self.client_dm = build('deploymentmanager', 'v2', credentials=self.credentials)
-        self.client_ce = build('compute', 'v1', credentials=self.credentials)
-
+        self.client_dm = build(
+            'deploymentmanager', 'v2',
+            credentials=self.credentials)
+        self.client_ce = build(
+            'compute', 'v1',
+            credentials=self.credentials)
 
     def deployment(self, name, project_id=None):
         return Deployment(name, project_id, self.client_dm,
@@ -45,7 +49,6 @@ class Deployment(object):
         :param dt: Datetime instanec to format, defaults to utcnow
         """
         return dt.isoformat("T") + "Z"
-
 
     def __init__(self, name, projectId, client_dm, client_ce, credentials):
         self.deploymentName = name
@@ -65,21 +68,21 @@ class Deployment(object):
         self.resources = []
         self.imports = []
 
-
     def _reconnect(self):
         self.credentials = GoogleCredentials.get_application_default()
-        self.client_dm = build('deploymentmanager', 'v2', credentials=self.credentials)
-        self.client_ce = build('compute', 'v1', credentials=self.credentials)
+        self.client_dm = build(
+            'deploymentmanager', 'v2',
+            credentials=self.credentials)
+        self.client_ce = build(
+            'compute', 'v1',
+            credentials=self.credentials)
         self.gce = GoogleComputeEngine()
-
 
     def setZone(self, zone):
         self.zone = zone
 
-
     def name(self):
         return self.deploymentName
-
 
     def create(self, preview=None):
         content = {"resources": self.resources}
@@ -110,10 +113,10 @@ class Deployment(object):
                     preview=preview
                 ).execute(num_retries=6)
         except Exception as ex:
-            raise Exception('Failed to create deployment {}: {}'.format(self.deploymentName, ex))
+            raise Exception('Failed to create deployment {}: {}'.format(
+                self.deploymentName, ex))
 
         return response
-
 
     def get(self):
         try:
@@ -128,7 +131,6 @@ class Deployment(object):
             raise
         return None
 
-
     def exists(self):
         response = None
         try:
@@ -136,7 +138,6 @@ class Deployment(object):
         except Exception:
             pass
         return response is not None
-
 
     def has_error(self):
         deploymentState = self.get()
@@ -149,14 +150,16 @@ class Deployment(object):
         })
         return 'error' in operation
 
-
     def delete(self):
         try:
             deployment = self.get()
             operation = deployment.get('operation')
             # Skip delete action, if it is in progress
-            if operation and operation.get('operationType') == 'delete' and operation.get('status') == 'RUNNING':
-                return deployment
+            if operation:
+                if (
+                        operation.get('operationType') == 'delete' and
+                        operation.get('status') == 'RUNNING'):
+                    return deployment
             response = self.client_dm.deployments().delete(
                 project=self.projectId,
                 deployment=self.deploymentName
@@ -166,15 +169,14 @@ class Deployment(object):
             pass
         return None
 
-
     def addResource(self, resource):
         self.resources.append(resource)
 
-
-    def addInstanceManagedGroup(self, name, template, description=None, targetSize=0, healthCheck=None):
+    def addInstanceManagedGroup(self, name, template, description=None,
+                                targetSize=0, healthCheck=None):
         properties = {
             "baseInstanceName": name,
-            "instanceTemplate": "projects/{}/global/instanceTemplates/{}".format(
+            "instanceTemplate": "projects/{}/global/instanceTemplates/{}".format(  # noqa
                 self.projectId, template),
             "name": name,
             "targetSize": targetSize,
@@ -193,8 +195,8 @@ class Deployment(object):
         }
         self.addResource(resource)
 
-
-    def addInstanceManagedAutoscaler(self, name, groupName, numRange, coolDown=300, utilization=None):
+    def addInstanceManagedAutoscaler(self, name, groupName, numRange,
+                                     coolDown=300, utilization=None):
         if utilization is None:
             # Set default CPU utilization to 0.8 value
             utilization = {
@@ -202,9 +204,11 @@ class Deployment(object):
                     "utilizationTarget": 0.8
                 }
             }
+        target = "https://www.googleapis.com/compute/"
+        target += "v1/projects/{}/zones/{}/instanceGroupManagers/{}".format(
+            self.projectId, self.zone, groupName)
         properties = {
-            "target": "https://www.googleapis.com/compute/v1/projects/{}/zones/{}/instanceGroupManagers/{}".format(
-                self.projectId, self.zone, groupName),
+            "target": target,
             "autoscalingPolicy": {
                 "minNumReplicas": numRange[0],
                 "maxNumReplicas": numRange[1],
@@ -220,7 +224,6 @@ class Deployment(object):
         }
         self.addResource(resource)
 
-
     def addInstanceManagedAutoscalerMetric(self, name, groupName, numRange,
                                            metricName, metricTarget,
                                            metricTargetType, coolDown=300):
@@ -233,8 +236,8 @@ class Deployment(object):
                 }
             ]
         }
-        self.addInstanceManagedAutoscaler(name, groupName, numRange, coolDown, utilization)
-
+        self.addInstanceManagedAutoscaler(
+            name, groupName, numRange, coolDown, utilization)
 
     def runningInstances(self, groupName):
         if not self.exists():

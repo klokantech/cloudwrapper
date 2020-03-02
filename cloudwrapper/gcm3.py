@@ -1,7 +1,7 @@
 """
 Google Custom Metric using API v3.
 
-Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
+Copyright (C) 2016-2020 Klokan Technologies GmbH (http://www.klokantech.com/)
 Author: Martin Mikita <martin.mikita@klokantech.com>
 """
 
@@ -22,7 +22,8 @@ except ImportError:
         'oauth2client==4.1.3',
         'requests==2.22.0',
     ]
-    warn('cloudwrapper.gcm3 requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
+    warn('cloudwrapper.gcm3 requires these packages:\n  - {}'.format(
+        '\n  - '.join(install_modules)))
     raise
 
 from .gce import GoogleComputeEngine
@@ -32,7 +33,6 @@ class GcmConnection(object):
 
     def __init__(self):
         pass
-
 
     def metric(self, name, project_id=None):
         return Metric(name, project_id)
@@ -50,7 +50,6 @@ class Metric(object):
         """
         return dt.isoformat("T") + "Z"
 
-
     def __init__(self, name, project_id):
         self.metricType = name
         self.gce = GoogleComputeEngine()
@@ -64,21 +63,18 @@ class Metric(object):
         self.metricKind = None
         self.client = monitoring.Client(project=self.project_id)
 
-
     def _reconnect(self):
         self.client = monitoring.Client(project=self.project_id)
         self.gce = GoogleComputeEngine()
 
-
     def name(self):
         return self.metricType
-
 
     def fullName(self):
         return '{}/{}'.format(self.CUSTOM_METRIC_DOMAIN, self.metricType)
 
-
-    def create(self, metricKind, valueType='DOUBLE', description='', displayName=None, labels=()):
+    def create(self, metricKind, valueType='DOUBLE', description='',
+               displayName=None, labels=()):
         if displayName is None:
             displayName = self.metricType.replace('/', ' ')
         for i, l in enumerate(labels):
@@ -86,10 +82,10 @@ class Metric(object):
                 labels[i] = monitoring.LabelDescriptor._from_dict(l)
             # Verify value type
             if labels[i].value_type not in ('STRING', 'INT64', 'BOOL'):
-                raise Exception('Unsupported value type {} for label {}/{}.'.format(
+                raise Exception('Unsupported value type {} for label {}/{}.'.format(  # noqa
                     labels[i].value_type, self.metricType, labels[i].key))
-        if valueType not in ('BOOL', 'INT64', 'DOUBLE', 'STRING', 'DISTRIBUTION'):
-            raise Exception('Unsupported value type {} of the metric {}.'.format(
+        if valueType not in ('BOOL', 'INT64', 'DOUBLE', 'STRING', 'DISTRIBUTION'):  # noqa
+            raise Exception('Unsupported value type {} of the metric {}.'.format(  # noqa
                 valueType, self.metricType))
         descriptor = self.client.metric_descriptor(
             self.fullName(),
@@ -125,10 +121,10 @@ class Metric(object):
                 if hasattr(e, 'errno') and e.errno == errno.EPIPE:
                     self._reconnect()
         else:
-            raise Exception('Failed to create custom metric: {}.'.format(last_ex))
+            raise Exception('Failed to create custom metric: {}.'.format(
+                last_ex))
 
         return metric
-
 
     def get(self):
         for _repeat in range(6):
@@ -147,14 +143,12 @@ class Metric(object):
                     self._reconnect()
         return None
 
-
     def has(self):
         return True if self.get() is not None else False
 
-
     def read(self, startTime=None, endTime=None, pageSize=10):
         if startTime is None:
-            startTime = datetime.datetime.utcnow() - datetime.timedelta(minutes=30)
+            startTime = datetime.datetime.utcnow() - datetime.timedelta(minutes=30)  # noqa
         elif not isinstance(startTime, datetime):
             raise Exception('Datetime object is required as startTime!')
         if endTime is None:
@@ -173,7 +167,6 @@ class Metric(object):
         except:
             pass
 
-
     def _addPoint(self, value, startTime=None, endTime=None):
         if self.valueType is None:
             # Read and save valueType
@@ -187,7 +180,8 @@ class Metric(object):
             valueType = 'boolValue'
         elif self.valueType == 'INT64' and isinstance(value, int):
             valueType = 'int64Value'
-        elif self.valueType == 'DOUBLE' and (isinstance(value, float) or isinstance(value, int)):
+        elif self.valueType == 'DOUBLE' and (
+                isinstance(value, float) or isinstance(value, int)):
             valueType = 'doubleValue'
             value = float(value)
         elif self.valueType == 'STRING' and isinstance(value, str):
@@ -195,7 +189,7 @@ class Metric(object):
         elif self.valueType == 'DISTRIBUTION' and 'count' in value:
             valueType = 'distributionValue'
         else:
-            raise Exception('Invalid value type for this point: {}, but required {}'.format(
+            raise Exception('Invalid value type for this point: {}, but required {}'.format(  # noqa
                 type(value), self.valueType))
 
         if startTime is not None and not isinstance(startTime, datetime):
@@ -215,7 +209,6 @@ class Metric(object):
             'end_time': endTime,
             'value': value,
         })
-
 
     def write(self, value, startTime=None, endTime=None, metricLabels={}):
         if len(metricLabels):

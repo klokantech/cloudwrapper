@@ -1,13 +1,12 @@
 """
 Influx DB Logging.
 
-Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
+Copyright (C) 2016-2020 Klokan Technologies GmbH (http://www.klokantech.com/)
 Author: Martin Mikita <martin.mikita@klokantech.com>
 """
 
 import logging
 import json
-import errno
 import datetime
 import socket
 
@@ -21,7 +20,8 @@ except ImportError:
     install_modules = [
         'influxdb==3.0.0',
     ]
-    warn('cloudwrapper.idl requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
+    warn('cloudwrapper.idl requires these packages:\n  - {}'.format(
+        '\n  - '.join(install_modules)))
     raise
 
 
@@ -35,13 +35,9 @@ class IdlConnection(object):
         self.client.switch_database(db)
         self.globalLabels = {}
 
-
     def addGlobalLabel(self, name, value):
-        """
-        Add one label with value into global labels.
-        """
+        """Add one label with value into global labels."""
         self.globalLabels[name] = value
-
 
     def setGlobalLabels(self, labels, append=False):
         """
@@ -53,21 +49,19 @@ class IdlConnection(object):
             self.globalLabels = {}
         self.globalLabels.update(labels)
 
-
     def handler(self, logId):
         return Handler(self.client, logId, self.globalLabels.copy())
-
 
 
 class Handler(logging.Handler):
 
     def _format_rfc3339(self, dt):
         """
-        Formats a datetime per RFC 3339.
+        Format a datetime per RFC 3339.
+
         :param dt: Datetime instance to format, defaults to utcnow
         """
         return dt.isoformat("T") + "Z"
-
 
     def _format_json(self, record):
         data = OrderedDict()
@@ -84,9 +78,9 @@ class Handler(logging.Handler):
                 pass
         if record.exc_info is not None:
             data.setdefault('message', str(record.exc_info[1]))
-            data['traceback'] = defaultFormatter.formatException(record.exc_info)
+            data['traceback'] = defaultFormatter.formatException(
+                record.exc_info)
         return json.dumps(data)
-
 
     def __init__(self, client, logId, globalLabels=None, *args, **kwargs):
         super(Handler, self).__init__(*args, **kwargs)
@@ -104,17 +98,12 @@ class Handler(logging.Handler):
         self.globalLabels = globalLabels
         self.entries = []
 
-
     def logId(self):
         return self.logId
 
-
     def addGlobalLabel(self, name, value):
-        """
-        Add one label with value into global labels.
-        """
+        """Add one label with value into global labels."""
         self.globalLabels[name] = value
-
 
     def setGlobalLabels(self, labels, append=False):
         """
@@ -126,9 +115,8 @@ class Handler(logging.Handler):
             self.globalLabels = {}
         self.globalLabels.update(labels)
 
-
     def emit(self, record):
-        d = datetime.datetime.utcnow() # <-- get time in UTC
+        d = datetime.datetime.utcnow()  # <-- get time in UTC
         tags = self.globalLabels.copy()
         tags.update({
             'severity': record.levelname,
@@ -145,14 +133,13 @@ class Handler(logging.Handler):
             'tags': tags,
         })
 
-
     def flush(self):
         if not self.entries:
             return
         lastException = None
         for _repeat in range(6):
             try:
-                self.client.write_points( self.entries )
+                self.client.write_points(self.entries)
                 self.entries = []
                 lastException = None
                 break
@@ -164,13 +151,12 @@ class Handler(logging.Handler):
         if lastException is not None:
             raise lastException
 
-
     def list(self, columns=None, filter=None, orderAsc=True):
 
         sql = 'SELECT '
         sqlCols = []
         for col in columns:
-            sqlcols.append('"{}"'.format(col))
+            sqlCols.append('"{}"'.format(col))
         if not sqlCols:
             sqlCols.append('*')
         sql += ','.join(sqlCols)
@@ -178,7 +164,7 @@ class Handler(logging.Handler):
         sql += 'FROM "{}"'.format(self.logId)
 
         # filter and orderAsc is not implemented yet
-        rs = client.query(sql)
+        rs = self.client.query(sql)
         if rs:
             for row in rs:
                 yield row

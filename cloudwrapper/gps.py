@@ -7,17 +7,17 @@ Author: Martin Mikita <martin.mikita@klokantech.com>
 import base64
 import json
 import sys
+from time import sleep, time
 
 if sys.version[0] == '2':
     from Queue import Empty
 else:
     from queue import Empty
 
-from time import sleep
-
 try:
     from googleapiclient.discovery import build
     from oauth2client.client import GoogleCredentials
+    from .gce import GoogleComputeEngine
 except ImportError:
     from warnings import warn
     install_modules = [
@@ -25,10 +25,9 @@ except ImportError:
         'oauth2client==2.0.2',
         'requests==2.9.1',
     ]
-    warn('cloudwrapper.gps requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
+    warn('cloudwrapper.gps requires these packages:\n  - {}'.format(
+        '\n  - '.join(install_modules)))
     raise
-
-from .gce import GoogleComputeEngine
 
 
 class GpsConnection(object):
@@ -38,14 +37,15 @@ class GpsConnection(object):
         self.client = build('pubsub', 'v1', credentials=self.credentials)
         self.gce = GoogleComputeEngine()
 
-
     def topic(self, name):
-        return Topic(name, self.client, self.credentials, self.gce.projectId())
-
+        return Topic(
+            name, self.client,
+            self.credentials, self.gce.projectId())
 
     def subscription(self, name):
-        return Subscription(name, self.client, self.credentials, self.gce.projectId())
-
+        return Subscription(
+            name, self.client,
+            self.credentials, self.gce.projectId())
 
 
 class Topic(object):
@@ -64,7 +64,6 @@ class Topic(object):
         except TypeError:
             return base64.b64encode(msg_json.encode('utf-8')).decode('utf-8')
 
-
     def publish(self, message):
         body = {
             "messages": [
@@ -77,7 +76,6 @@ class Topic(object):
             topic=self.topicId,
             body=body).execute(num_retries=6)
 
-
     def put(self, item, block=True, timeout=None, delay=None):
         """Put item into the queue.
 
@@ -85,9 +83,9 @@ class Topic(object):
         so both 'block' and 'timeout' must have their default values only.
         """
         if not (block and timeout is None):
-            raise Exception('GpubsubConnection::Topic::put() - Block and timeout must have default values.')
+            raise Exception('GpubsubConnection::Topic::put() '
+                            '- Block and timeout must have default values.')
         self.publish(item)
-
 
 
 class Subscription(object):
@@ -97,7 +95,8 @@ class Subscription(object):
         self.handle = handle
         self.credentials = credentials
         self.projectId = projectId
-        self.subscriptionId = 'projects/{}/subscriptions/{}'.format(self.projectId, name)
+        self.subscriptionId = 'projects/{}/subscriptions/{}'.format(
+            self.projectId, name)
         self.available_timestamp = None
 
     def _decode(self, message):
@@ -105,13 +104,11 @@ class Subscription(object):
         try:
             msg_json = base64.b64decode(message)
         except TypeError:
-            msg_json = base64.b64decode(message.encode('utf-8')).decode('utf-8')
+            msg_json = base64.b64decode(message.encode('utf-8')).decode('utf-8')  # noqa
         return json.loads(msg_json)
 
-
     def list(self, maxCount=100):
-        """Pull list of messages (default 100) from the subscriber.
-        """
+        """Pull list of messages (default 100) from the subscriber."""
         body = {
             "returnImmediately": True,
             "maxMessages": maxCount,
@@ -126,10 +123,8 @@ class Subscription(object):
                 if msg:
                     yield self._decode(str(msg.get('data')))
 
-
     def _get_message(self, block=True):
-        """Internal pull one message from the subscriber.
-        """
+        """Internal pull one message from the subscriber."""
         body = {
             "returnImmediately": not block,
             "maxMessages": 1,
@@ -145,10 +140,8 @@ class Subscription(object):
                     return message
         return None
 
-
     def pull(self, block=True, timeout=None):
-        """Pull one message from the subscriber.
-        """
+        """Pull one message from the subscriber."""
         self.message = self._get_message(block)
         if block:
             while self.message is None:
@@ -165,12 +158,9 @@ class Subscription(object):
 
         return self._decode(str(data))
 
-
     def get(self, block=True, timeout=None):
-        """Get (pull) one message from the subscriber.
-        """
+        """Get (pull) one message from the subscriber."""
         return self.pull(block=block, timeout=timeout)
-
 
     def acknowledge(self):
         """Acknowledge that a formerly enqueued message is complete.
@@ -180,7 +170,7 @@ class Subscription(object):
         if self.message is None:
             raise Exception('No message to acknowledge.')
         body = {
-            "ackIds": [ self.message.get('ackId') ],
+            "ackIds": [self.message.get('ackId')],
         }
         resp = self.handle.projects().subscriptions().acknowledge(
             subscription=self.subscriptionId,
@@ -190,7 +180,6 @@ class Subscription(object):
             raise Exception(resp)
         self.message = None
 
-
     def task_done(self):
         """Acknowledge that a formerly enqueued message is complete.
 
@@ -198,17 +187,15 @@ class Subscription(object):
         """
         self.acknowledge()
 
-
     def update(self, lease_time=600, msg=None):
-        """Update lease time for a formerly enqueued message.
-        """
+        """Update lease time for a formerly enqueued message."""
         if msg is None:
             msg = self.message
         if msg is None:
             raise Exception('No message to update.')
         body = {
             "ackDeadlineSeconds": int(lease_time),
-            "ackIds": [ msg.get('ackId') ],
+            "ackIds": [msg.get('ackId')],
         }
         resp = self.handle.projects().subscriptions().modifyAckDeadline(
             subscription=self.subscriptionId,
@@ -217,16 +204,15 @@ class Subscription(object):
         if resp:
             raise Exception(resp)
 
-
     def has_available(self):
-        """Is any message available for lease.
+        """It is any message available for lease.
 
         If there is no message, this state is cached internally for 5 minutes.
         10 minutes is time used for Google Autoscaler.
         """
-        now = time.time()
+        now = time()
         # We have cached False response
-        if self.available_timestamp is not None and now < self.available_timestamp:
+        if self.available_timestamp is not None and now < self.available_timestamp:  # noqa
             return False
 
         # Get oldestTask from queue stats
@@ -247,5 +233,5 @@ class Subscription(object):
             self.update(lease_time=2, msg=msg)
             return True
         # No available task, cache this response for 5 minutes
-        self.available_timestamp = now + 300 # 5 minutes
+        self.available_timestamp = now + 300  # 5 minutes
         return False

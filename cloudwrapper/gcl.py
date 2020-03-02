@@ -1,6 +1,6 @@
 """Google Cloud Logging.
 
-Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
+Copyright (C) 2016-2020 Klokan Technologies GmbH (http://www.klokantech.com/)
 Author: Martin Mikita <martin.mikita@klokantech.com>
 """
 
@@ -21,7 +21,8 @@ except ImportError:
         'oauth2client==2.0.2',
         'requests==2.9.1',
     ]
-    warn('cloudwrapper.gcl requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
+    warn('cloudwrapper.gcl requires these packages:\n  - {}'.format(
+        '\n  - '.join(install_modules)))
     raise
 
 from .gce import GoogleComputeEngine
@@ -33,10 +34,8 @@ class GclConnection(object):
         credentials = GoogleCredentials.get_application_default()
         self.connection = build('logging', 'v2beta1', credentials=credentials)
 
-
     def handler(self, projectId, logId):
         return Handler(self.connection, projectId, logId)
-
 
 
 class Handler(logging.Handler):
@@ -66,15 +65,13 @@ class Handler(logging.Handler):
             'entries': [],
         }
 
-
     def emit(self, record):
-        d = datetime.utcnow() # <-- get time in UTC
+        d = datetime.utcnow()  # <-- get time in UTC
         self.entries.append({
             'timestamp': d.isoformat("T") + "Z",
             'jsonPayload': json.loads(self.format(record)),
             'severity': record.levelname
         })
-
 
     def flush(self):
         if not self.entries:
@@ -82,7 +79,7 @@ class Handler(logging.Handler):
         for _repeat in range(6):
             try:
                 self.body['entries'] = self.entries
-                resp = self.connection.entries().write(
+                self.connection.entries().write(
                     body=self.body).execute()
                 self.entries = []
                 break
@@ -90,22 +87,25 @@ class Handler(logging.Handler):
                 sleep(_repeat * 2 + 1)
                 if e.errno == errno.EPIPE:
                     credentials = GoogleCredentials.get_application_default()
-                    self.connection = build('logging', 'v2beta1', credentials=credentials)
+                    self.connection = build(
+                        'logging',
+                        'v2beta1',
+                        credentials=credentials)
             except Exception:
                 sleep(_repeat * 2 + 5)
 
-
     def list(self, filter=None, orderAsc=True):
-        logFilter = []
-        logFilter.append('logName="projects/{}/logs/{}"'.format(self.projectId, self.logId))
+        log_filter = []
+        log_filter.append('logName="projects/{}/logs/{}"'.format(
+            self.projectId, self.logId))
         if self.gce.isInstance():
-            logFilter.append('resource.type="gce_instance"')
+            log_filter.append('resource.type="gce_instance"')
         if filter is not None:
-            logFilter.append('({})'.format(filter))
+            log_filter.append('({})'.format(filter))
         body = {
             'orderBy': 'timestamp {}'.format('asc' if orderAsc else 'desc'),
             'pageSize': 1000,
-            'filter': ' AND '.join(logFilter),
+            'filter': ' AND '.join(log_filter),
             'projectIds': [
                 self.projectId
             ]
@@ -113,13 +113,12 @@ class Handler(logging.Handler):
         req = self.connection.entries().list(body=body)
         while req:
             resp = req.execute(num_retries=6)
-            nextPageToken = str(resp.get('nextPageToken', ''))
+            next_token = str(resp.get('nextPageToken', ''))
             entries = resp.get('entries', [])
             for entry in entries:
                 payload = entry.get('jsonPayload', {})
                 yield payload
-            if len(nextPageToken) == 0:
+            if len(next_token) == 0:
                 break
-            body['pageToken'] = nextPageToken
+            body['pageToken'] = next_token
             req = self.connection.entries().list(body=body)
-

@@ -44,7 +44,8 @@ extras_requires = {
 setup(
     name='cloudwrapper',
     version=cloudwrapper.__version__,
-    description="Wrappers around cloud services for Amazon, Google and private cloud",
+    description="Wrappers around cloud services for Amazon, "
+                "Google and private cloud",
     long_description=readme,
     classifiers=[],
     keywords='',

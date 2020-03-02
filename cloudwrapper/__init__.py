@@ -1,6 +1,6 @@
 """Wrappers around cloud services for Amazon, Google and private cloud.
 
-Copyright (C) 2016-2019 Klokan Technologies GmbH (https://www.klokantech.com/)
+Copyright (C) 2016-2020 Klokan Technologies GmbH (https://www.klokantech.com/)
 Maintainer: Martin Mikita, martin.mikita@klokantech.com
 
 Modules:

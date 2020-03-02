@@ -1,6 +1,6 @@
 """Amazon CloudWatch Logs.
 
-Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
+Copyright (C) 2016-2020 Klokan Technologies GmbH (http://www.klokantech.com/)
 Author: Vaclav Klusak <vaclav.klusak@klokantech.com>
 """
 
@@ -17,7 +17,8 @@ except ImportError:
     install_modules = [
         'boto==2.48.0',
     ]
-    warn('cloudwrapper.cwl requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
+    warn('cloudwrapper.cwl requires these packages:\n  - {}'.format(
+        '\n  - '.join(install_modules)))
     raise
 
 
@@ -28,7 +29,6 @@ class CwlConnection(object):
             region,
             aws_access_key_id=key,
             aws_secret_access_key=secret)
-
 
     def handler(self, group, stream):
         try:
@@ -42,7 +42,6 @@ class CwlConnection(object):
         return Handler(self.connection, group, stream)
 
 
-
 class Handler(logging.Handler):
 
     def __init__(self, connection, group, stream, *args, **kwargs):
@@ -53,13 +52,11 @@ class Handler(logging.Handler):
         self.token = None
         self.events = []
 
-
     def emit(self, record):
         self.events.append({
             'timestamp': int(record.created * 1000),
             'message': self.format(record),
         })
-
 
     def flush(self):
         if not self.events:

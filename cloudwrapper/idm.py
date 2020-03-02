@@ -1,12 +1,10 @@
 """
 Influx DB Metric.
 
-Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
+Copyright (C) 2016-2020 Klokan Technologies GmbH (http://www.klokantech.com/)
 Author: Martin Mikita <martin.mikita@klokantech.com>
 """
 
-import json
-import errno
 import datetime
 import socket
 
@@ -19,8 +17,10 @@ except ImportError:
     install_modules = [
         'influxdb==3.0.0',
     ]
-    warn('cloudwrapper.idm requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
+    warn('cloudwrapper.idm requires these packages:\n  - {}'.format(
+        '\n  - '.join(install_modules)))
     raise
+
 
 class IdmConnection(object):
 
@@ -31,13 +31,9 @@ class IdmConnection(object):
         self.client.create_database(db)
         self.globalLabels = {}
 
-
     def addGlobalLabel(self, name, value):
-        """
-        Add one label with value into global labels.
-        """
+        """Add one label with value into global labels."""
         self.globalLabels[name] = value
-
 
     def setGlobalLabels(self, labels, append=False):
         """
@@ -49,21 +45,19 @@ class IdmConnection(object):
             self.globalLabels = {}
         self.globalLabels.update(labels)
 
-
     def metric(self, name):
         return Metric(name, self.client, self.globalLabels.copy())
-
 
 
 class Metric(object):
 
     def _format_rfc3339(self, dt):
         """
-        Formats a datetime per RFC 3339.
+        Format a datetime per RFC 3339.
+
         :param dt: Datetime instance to format, defaults to utcnow
         """
         return dt.isoformat("T") + "Z"
-
 
     def __init__(self, name, client, globalLabels=None):
         """
@@ -79,27 +73,20 @@ class Metric(object):
             globalLabels = {}
         self.globalLabels = globalLabels
 
-
     def name(self):
         return self.metricName
-
 
     def create(self):
         # No creation is necessary
         pass
 
-
     def get(self):
         # TODO what to return? Schema of metric table?
         pass
 
-
     def has(self):
-        """
-        Each metric exists all the time in Influx DB.
-        """
+        """Each metric exists all the time in Influx DB."""
         return True
-
 
     def read(self, startTime=None, endTime=None, pageSize=10):
         """
@@ -111,7 +98,8 @@ class Metric(object):
         return []
         # try:
         #     if startTime is None:
-        #         startTime = datetime.datetime.utcnow() - datetime.timedelta(minutes=30)
+        #         startTime = datetime.datetime.utcnow() - datetime.timedelta(
+        #             minutes=30)
         #     elif not isinstance(startTime, datetime):
         #         raise Exception('Datetime object is required as startTime!')
         #     if endTime is None:
@@ -134,13 +122,9 @@ class Metric(object):
         # except:
         #     return []
 
-
     def addGlobalLabel(self, name, value):
-        """
-        Add one label with value into global labels.
-        """
+        """Add one label with value into global labels."""
         self.globalLabels[name] = value
-
 
     def setGlobalLabels(self, labels, append=False):
         """
@@ -152,7 +136,6 @@ class Metric(object):
             self.globalLabels = {}
         self.globalLabels.update(labels)
 
-
     def _addPoint(self, value, labels=None, startTime=None, endTime=None):
         """
         Add one point value with optional labels.
@@ -160,7 +143,6 @@ class Metric(object):
         Label parameter doesn't use global labels
         Default value for startTime and endTime is time.now()
         """
-
         if startTime is None:
             startTime = datetime.datetime.utcnow()
         elif not isinstance(startTime, datetime):
@@ -183,7 +165,6 @@ class Metric(object):
             },
             'tags': labels
         })
-
 
     def write(self, value, startTime=None, endTime=None, metricLabels=None):
         """
@@ -208,7 +189,7 @@ class Metric(object):
         lastException = None
         for _repeat in range(6):
             try:
-                self.client.write_points( self.points )
+                self.client.write_points(self.points)
                 self.points = []
                 return True
             except IOError as e:
@@ -216,4 +197,3 @@ class Metric(object):
                 lastException = e
         if lastException is not None:
             raise lastException
-

@@ -1,6 +1,6 @@
 """Google Task Pull Queues.
 
-Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
+Copyright (C) 2016-2020 Klokan Technologies GmbH (http://www.klokantech.com/)
 Author: Martin Mikita <martin.mikita@klokantech.com>
 """
 
@@ -29,7 +29,8 @@ except ImportError:
         'google-api-python-client==1.7.11',
         'oauth2client==4.1.3',
     ]
-    warn('cloudwrapper.gtq requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
+    warn('cloudwrapper.gtq requires these packages:\n  - {}'.format(
+        '\n  - '.join(install_modules)))
     raise
 
 
@@ -44,7 +45,7 @@ class GtqConnection(object):
 
 class Queue(BaseQueue):
     """
-    Google Task Pull Queues
+    Google Task Pull Queues.
 
     Note that items gotten from the queue MUST be acknowledged by
     calling task_done(). Otherwise they will appear back in the
@@ -59,18 +60,19 @@ class Queue(BaseQueue):
         self.available_timestamp = None
         self._reconnect()
 
-
     def _reconnect(self):
         credentials = GoogleCredentials.get_application_default()
-        self.handle_api = build('taskqueue', 'v1beta2', credentials=credentials)
-
+        self.handle_api = build(
+            'taskqueue', 'v1beta2',
+            credentials=credentials)
 
     def qsize(self):
-        """Implemented via REST API
-        GET https://www.googleapis.com/taskqueue/v1beta2/projects/project/taskqueues/taskqueue?getStats=true
-        Response: see https://cloud.google.com/appengine/docs/python/taskqueue/rest/taskqueues#resource
+        """Implemented via REST API.
+
+        GET https://www.googleapis.com/taskqueue/v1beta2/projects/project/taskqueues/taskqueue?getStats=true  # noqa
+        Response: see https://cloud.google.com/appengine/docs/python/taskqueue/rest/taskqueues#resource  # noqa
         """
-        try :
+        try:
             taskqueue = self.handle_api.taskqueues().get(
                 project=self.handle.project,
                 taskqueue=self.handle.id,
@@ -79,7 +81,6 @@ class Queue(BaseQueue):
         except:
             return 0
         return int(taskqueue['stats']['totalTasks'])
-
 
     def put(self, item, block=True, timeout=None, delay=None):
         """Put item into the queue.
@@ -91,7 +92,10 @@ class Queue(BaseQueue):
             raise Exception('block and timeout must have default values')
         for _repeat in range(6):
             try:
-                self.handle.insert_task(description=json.dumps(item, separators=(',', ':')), client=self.client)
+                self.handle.insert_task(
+                    description=json.dumps(
+                        item, separators=(',', ':')),
+                    client=self.client)
                 break
             except IOError as e:
                 sleep(_repeat * 2 + 1)
@@ -100,13 +104,13 @@ class Queue(BaseQueue):
             except GCloudError:
                 sleep(_repeat * 2 + 5)
 
-
     def _get_message(self, lease_time):
-        """Get one message with lease_time
-        """
+        """Get one message with lease_time."""
         for _repeat in range(6):
             try:
-                for task in self.handle.lease(lease_time=lease_time, num_tasks=1, client=self.client):
+                for task in self.handle.lease(
+                        lease_time=lease_time,
+                        num_tasks=1, client=self.client):
                     return task
                 return None
             except IOError as e:
@@ -116,13 +120,11 @@ class Queue(BaseQueue):
             except GCloudError:
                 sleep(_repeat * 2 + 5)
 
-
     def get(self, block=True, timeout=None, lease_time=3600):
         """Get item from the queue.
 
         Default lease_time is 1 hour.
         """
-
         self.message = self._get_message(lease_time)
         if block:
             while self.message is None:
@@ -134,7 +136,6 @@ class Queue(BaseQueue):
             raise Empty
 
         return json.loads(self.message.description)
-
 
     def task_done(self):
         """Acknowledge that a formerly enqueued task is complete.
@@ -156,10 +157,8 @@ class Queue(BaseQueue):
             except GCloudError:
                 sleep(_repeat * 2 + 5)
 
-
     def update(self, lease_time=600):
-        """Update lease time for a formerly enqueued message.
-        """
+        """Update lease time for a formerly enqueued message."""
         msg = self.message
         if msg is None:
             raise Exception('No message to update.')
@@ -174,16 +173,15 @@ class Queue(BaseQueue):
             except GCloudError:
                 sleep(_repeat * 2 + 5)
 
-
     def has_available(self):
-        """Is any message available for lease.
+        """It is any message available for lease.
 
         If there is no message, this state is cached internally for 5 minutes.
         10 minutes is time used for Google Autoscaler.
         """
         now = time()
         # We have cached False response
-        if self.available_timestamp is not None and now < self.available_timestamp:
+        if self.available_timestamp is not None and now < self.available_timestamp:  # noqa
             return False
 
         # Get oldestTask from queue stats
@@ -214,6 +212,5 @@ class Queue(BaseQueue):
         if oldestTask > 0 and oldestTask < now:
             return True
         # No available task, cache this response for 5 minutes
-        self.available_timestamp = now + 300 # 5 minutes
+        self.available_timestamp = now + 300  # 5 minutes
         return False
-

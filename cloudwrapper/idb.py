@@ -1,7 +1,7 @@
 """
 Influx DB direct use (as SQL database).
 
-Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
+Copyright (C) 2016-2020 Klokan Technologies GmbH (http://www.klokantech.com/)
 Author: Martin Mikita <martin.mikita@klokantech.com>
 """
 
@@ -15,7 +15,8 @@ except ImportError:
     install_modules = [
         'influxdb==3.0.0',
     ]
-    warn('cloudwrapper.idb requires these packages:\n  - {}'.format('\n  - '.join(install_modules)))
+    warn('cloudwrapper.idb requires these packages:\n  - {}'.format(
+        '\n  - '.join(install_modules)))
     raise
 
 
@@ -35,35 +36,29 @@ class IdbConnection(object):
         self.client.create_database(db)
         self.client.switch_database(db)
 
-
     def table(self, name, tags=None):
         """
-        Return Table object, tags is list of columns that should be indexed
+        Return Table object.
+
+        @param tags - the list of columns that should be indexed.
         """
         return Table(self.client, name, tags)
-
 
     def drop(self, name, silent=True):
         self.table(name).drop(silent)
         return True
 
 
-
 class Table(object):
 
     def __init__(self, client, name, tags=None):
-        """
-        Create Table object with name, using client connection.
-        """
+        """Create Table object with name, using client connection."""
         self.name = name
         self.client = client
         self.tags = tags
 
-
     def insert(self, data):
-        """
-        Insert data into this table
-        """
+        """Insert data into this table."""
         tagsData = {}
         fieldsData = {}
         # Separate tags from other values - fields
@@ -84,9 +79,9 @@ class Table(object):
         }]
         try:
             return self.client.write_points(points)
-        except Exception as e:
-            raise Exception('Unable to insert data into this table: '+str(e))
-
+        except Exception as ex:
+            raise Exception('Unable to insert data into this table: {}'.format(
+                ex))
 
     def list(self, columns=None, where=None, sort=None):
         sql = 'SELECT '
@@ -112,7 +107,9 @@ class Table(object):
             elif isinstance(where, collections.Iterable):
                 sqlWhere.extend(where)
             else:
-                raise Exception('Unable to parse where argument: type {}'.format(type(where)))
+                raise Exception(
+                    'Unable to parse where argument: type {}'.format(
+                        type(where)))
             sql += ' WHERE '
             sql += ' AND '.join(sqlWhere)
 
@@ -125,7 +122,9 @@ class Table(object):
             elif isinstance(sort, (str, unicode)):
                 sqlSort.append(sort)
             else:
-                raise Exception('Unable to parse sort argument: type {}'.format(type(sort)))
+                raise Exception(
+                    'Unable to parse sort argument: type {}'.format(
+                        type(sort)))
             sql += ' ORDER BY '
             sql += ' , '.join(sqlSort)
         # Add default sorting by time DESC
@@ -146,7 +145,6 @@ class Table(object):
                         myrow[x] = row[x]
                 yield myrow
 
-
     def get(self, columns=None, where=None, sort=None):
         result = None
         for row in self.list(columns, where, sort):
@@ -154,11 +152,10 @@ class Table(object):
             break
         return result
 
-
     def drop(self, silent=True):
         try:
             sql = 'DROP MEASUREMENT "{}"'.format(self.name)
-            rs = self.client.query(sql)
+            self.client.query(sql)
         except:
             if not silent:
                 raise

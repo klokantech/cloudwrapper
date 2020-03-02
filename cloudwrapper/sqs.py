@@ -1,18 +1,18 @@
 """Amazon SQS.
 
-Copyright (C) 2016 Klokan Technologies GmbH (http://www.klokantech.com/)
+Copyright (C) 2016-2020 Klokan Technologies GmbH (http://www.klokantech.com/)
 Author: Vaclav Klusak <vaclav.klusak@klokantech.com>
 """
 
 import sys
+from time import sleep, time
+from .base import BaseQueue
+
 
 if sys.version[0] == '2':
     from Queue import Empty
 else:
     from queue import Empty
-
-from time import sleep, time
-from .base import BaseQueue
 
 try:
     from boto.sqs import connect_to_region
@@ -35,10 +35,8 @@ class SqsConnection(object):
             aws_access_key_id=key,
             aws_secret_access_key=secret)
 
-
     def queue(self, name):
         return Queue(self.connection.get_queue(name))
-
 
 
 class Queue(BaseQueue):
@@ -57,10 +55,8 @@ class Queue(BaseQueue):
         self.message = None
         self.available_timestamp = None
 
-
     def qsize(self):
         return self.handle.count()
-
 
     def put(self, item, block=True, timeout=None, delay=None):
         """Put item into the queue.
@@ -72,11 +68,11 @@ class Queue(BaseQueue):
             raise Exception('block and timeout must have default values')
         self.handle.write(self.handle.new_message(item), delay_seconds=delay)
 
-
     def get(self, block=True, timeout=None):
         """Get item from the queue.
 
-        Note that SQS can block either indefinitely, or between 1 and 20 seconds.
+        Note that SQS can block either indefinitely,
+        or between 1 and 20 seconds.
         """
         if block and timeout is None:
             self.message = self.handle.read(wait_time_seconds=20)
@@ -92,7 +88,6 @@ class Queue(BaseQueue):
             raise Empty
         return self.message.get_body()
 
-
     def task_done(self):
         """Acknowledge that a formerly enqueued task is complete.
 
@@ -104,16 +99,15 @@ class Queue(BaseQueue):
         self.handle.delete_message(self.message)
         self.message = None
 
-
     def has_available(self):
-        """Is any message available for lease.
+        """It is any message available for lease.
 
         If there is no message, this state is cached internally for 5 minutes.
         10 minutes is time used for Google Autoscaler.
         """
         now = time()
         # We have cached False response
-        if self.available_timestamp is not None and now < self.available_timestamp:
+        if self.available_timestamp is not None and now < self.available_timestamp:  # noqa
             return False
 
         # Get oldestTask from queue stats

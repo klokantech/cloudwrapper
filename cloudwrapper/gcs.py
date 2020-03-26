@@ -75,16 +75,22 @@ class Bucket(BaseBucket):
         self.handle = connection.get_bucket(name)
 
     def put(self, source, target):
+        last_ex = None
         for _repeat in range(6):
             try:
                 key = self.handle.blob(target, chunk_size=self.CHUNK_SIZE)
                 key.upload_from_filename(source)
                 break
-            except (IOError, BadStatusLine, exceptions.GCloudError):
+            except (IOError, BadStatusLine, exceptions.GCloudError) as ex:
                 sleep(_repeat * 2 + 1)
                 self._reconnect(self.name)
-            except:
-                pass
+                last_ex = ex
+            except Exception as ex:
+                last_ex = ex
+        else:
+            raise Exception("Object {} cannot put into the bucket {}: {}!".format(
+                source, self.handle.id,
+                str(last_ex)))
 
     def get(self, source, target):
         key = self.handle.get_blob(source)
@@ -92,16 +98,22 @@ class Bucket(BaseBucket):
             raise Exception("Object {} not exists in bucket {}.".format(
                 source, self.handle.id))
         key.chunk_size = self.CHUNK_SIZE
+        last_ex = None
         for _repeat in range(6):
             try:
                 key.download_to_filename(target)
                 break
-            except (IOError, BadStatusLine, exceptions.GCloudError):
+            except (IOError, BadStatusLine, exceptions.GCloudError) as ex:
                 sleep(_repeat * 2 + 1)
                 self._reconnect(self.name)
                 key = self.handle.get_blob(source)
-            except:
-                pass
+                last_ex = ex
+            except Exception as ex:
+                last_ex = ex
+        else:
+            raise Exception("Object {} cannot get from the bucket {}: {}!".format(
+                source, self.handle.id,
+                str(last_ex)))
 
     def rename(self, source, target):
         key = self.handle.get_blob(source)

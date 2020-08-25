@@ -100,6 +100,9 @@ class Bucket(BaseBucket):
         connection = storage.Client()
         self.handle = connection.get_bucket(name)
 
+    def crc32c_hash_b64encode(crc32c_hash):
+        return base64.b64encode(struct.pack(">I", crc32c_hash)).decode("utf-8")
+
     def download_with_verification(self, blob, target):
         source_blob_crc32c = blob.crc32c
         if not os.path.exists(target):
@@ -107,16 +110,18 @@ class Bucket(BaseBucket):
                 parser = Crc32cCalculator(blob_file)
                 blob.download_to_file(parser)
 
-            if base64.b64encode(struct.pack(">I", parser.crc32._crc)).decode("utf-8") != source_blob_crc32c:
+            if crc32c_hash_b64encode(parser.crc32._crc) != source_blob_crc32c:
                 os.remove(target)
                 raise DifferentHashException("The hash of source and target are different.")
-
 
     def put(self, source, target):
         last_ex = None
         for _repeat in range(6):
             try:
                 key = self.handle.blob(target, chunk_size=self.CHUNK_SIZE)
+                with open(target, "rb") as blob_file:
+                    crc32 = crc32c.Checksum(blob_file.read())
+                key.crc32c = self.crc32c_hash_b64encode(crc32._crc)
                 key.upload_from_filename(source)
                 break
             except (IOError, BadStatusLine, exceptions.GCloudError) as ex:

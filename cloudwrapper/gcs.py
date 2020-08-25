@@ -101,6 +101,7 @@ class Bucket(BaseBucket):
         self.handle = connection.get_bucket(name)
 
     def download_with_verification(self, blob, target):
+        source_blob_crc32c = blob.crc32c
         if not os.path.exists(target):
             with open(target, "wb") as blob_file:
                 parser = Crc32cCalculator(blob_file)

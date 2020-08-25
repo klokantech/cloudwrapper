@@ -4,7 +4,11 @@ Copyright (C) 2016-2020 Klokan Technologies GmbH (http://www.klokantech.com/)
 Author: Martin Mikita <martin.mikita@klokantech.com>
 """
 
+import base64
+import crc32c
 import errno
+import os
+import struct
 
 from time import sleep
 
@@ -27,6 +31,28 @@ try:
 except ImportError:
     # python3
     from http.client import BadStatusLine, ResponseNotReady
+
+
+class DifferentHashException(Exception):
+        pass
+
+
+class Crc32cCalculator:
+    """The Google Python client doesn't provide a way to stream a file being
+       written, so we can wrap the file object in an additional class to
+       do custom handling. This is so we don't need to download the file
+       and then stream read it again to calculate the hash.
+       https://vsoch.github.io/2020/crc32c-validation-google-storage/
+   """
+
+    def __init__(self, fileobj):
+        self._fileobj = fileobj
+        self.crc32 = crc32c.Checksum()
+
+    def write(self, chunk):
+        self._fileobj.write(chunk)
+        self.crc32.update(chunk)
+
 
 
 class GcsConnection(object):
@@ -74,6 +100,17 @@ class Bucket(BaseBucket):
         connection = storage.Client()
         self.handle = connection.get_bucket(name)
 
+    def download_with_verification(self, blob, target):
+        if not os.path.exists(target):
+            with open(target, "wb") as blob_file:
+                parser = Crc32cCalculator(blob_file)
+                blob.download_to_file(parser)
+
+            if base64.b64encode(struct.pack(">I", parser.crc32._crc)).decode("utf-8") != source_blob_crc32c:
+                os.remove(target)
+                raise DifferentHashException("The hash of source and target are different.")
+
+
     def put(self, source, target):
         last_ex = None
         for _repeat in range(6):
@@ -101,9 +138,9 @@ class Bucket(BaseBucket):
         last_ex = None
         for _repeat in range(6):
             try:
-                key.download_to_filename(target)
+                self.download_with_verification(key, target)
                 break
-            except (IOError, BadStatusLine, exceptions.GCloudError) as ex:
+            except (IOError, DifferentHashException, BadStatusLine, exceptions.GCloudError) as ex:
                 sleep(_repeat * 2 + 1)
                 self._reconnect(self.name)
                 key = self.handle.get_blob(source)

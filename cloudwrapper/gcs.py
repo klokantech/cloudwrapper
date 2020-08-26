@@ -5,7 +5,6 @@ Author: Martin Mikita <martin.mikita@klokantech.com>
 """
 
 import base64
-import crc32c
 import errno
 import os
 import struct
@@ -20,6 +19,7 @@ except ImportError:
     from warnings import warn
     install_modules = [
         'gcloud==0.18.3',
+	'crc32c==2.0.1',
     ]
     warn('cloudwrapper.gcs requires these packages:\n  - {}'.format(
         '\n  - '.join(install_modules)))

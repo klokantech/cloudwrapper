@@ -124,7 +124,7 @@ class Bucket(BaseBucket):
                 key.crc32c = self.crc32c_hash_b64encode(crc32._crc)
                 key.upload_from_filename(source)
                 break
-            except (IOError, BadStatusLine, exceptions.GCloudError) as ex:
+            except (IOError, BadStatusLine, exceptions.GCloudError, exceptions.BadRequest) as ex:
                 sleep(_repeat * 2 + 1)
                 self._reconnect(self.name)
                 last_ex = ex

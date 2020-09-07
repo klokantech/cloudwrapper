@@ -4,7 +4,6 @@ Copyright (C) 2016-2020 Klokan Technologies GmbH (http://www.klokantech.com/)
 Author: Martin Mikita <martin.mikita@klokantech.com>
 """
 
-import base64
 import errno
 import os
 import struct
@@ -14,12 +13,14 @@ from time import sleep
 from .base import BaseBucket
 
 try:
+    import base64
+    import crc32c
     from gcloud import storage, exceptions
 except ImportError:
     from warnings import warn
     install_modules = [
         'gcloud==0.18.3',
-	'crc32c==2.0.1',
+        'crc32c==2.0.1',
     ]
     warn('cloudwrapper.gcs requires these packages:\n  - {}'.format(
         '\n  - '.join(install_modules)))

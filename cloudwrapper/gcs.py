@@ -5,17 +5,22 @@ Author: Martin Mikita <martin.mikita@klokantech.com>
 """
 
 import errno
+import os
+import struct
 
 from time import sleep
 
 from .base import BaseBucket
 
 try:
+    import base64
+    import crc32c
     from gcloud import storage, exceptions
 except ImportError:
     from warnings import warn
     install_modules = [
         'gcloud==0.18.3',
+        'crc32c==2.0.1',
     ]
     warn('cloudwrapper.gcs requires these packages:\n  - {}'.format(
         '\n  - '.join(install_modules)))
@@ -27,6 +32,28 @@ try:
 except ImportError:
     # python3
     from http.client import BadStatusLine, ResponseNotReady
+
+
+class DifferentHashException(Exception):
+        pass
+
+
+class Crc32cCalculator:
+    """The Google Python client doesn't provide a way to stream a file being
+       written, so we can wrap the file object in an additional class to
+       do custom handling. This is so we don't need to download the file
+       and then stream read it again to calculate the hash.
+       https://vsoch.github.io/2020/crc32c-validation-google-storage/
+   """
+
+    def __init__(self, fileobj):
+        self._fileobj = fileobj
+        self.crc32 = crc32c.Checksum()
+
+    def write(self, chunk):
+        self._fileobj.write(chunk)
+        self.crc32.update(chunk)
+
 
 
 class GcsConnection(object):
@@ -74,14 +101,31 @@ class Bucket(BaseBucket):
         connection = storage.Client()
         self.handle = connection.get_bucket(name)
 
+    def crc32c_hash_b64encode(crc32c_hash):
+        return base64.b64encode(struct.pack(">I", crc32c_hash)).decode("utf-8")
+
+    def download_with_verification(self, blob, target):
+        source_blob_crc32c = blob.crc32c
+        if not os.path.exists(target):
+            with open(target, "wb") as blob_file:
+                parser = Crc32cCalculator(blob_file)
+                blob.download_to_file(parser)
+
+            if crc32c_hash_b64encode(parser.crc32._crc) != source_blob_crc32c:
+                os.remove(target)
+                raise DifferentHashException("The hash of source and target are different.")
+
     def put(self, source, target):
         last_ex = None
         for _repeat in range(6):
             try:
                 key = self.handle.blob(target, chunk_size=self.CHUNK_SIZE)
+                with open(target, "rb") as blob_file:
+                    crc32 = crc32c.Checksum(blob_file.read())
+                key.crc32c = self.crc32c_hash_b64encode(crc32._crc)
                 key.upload_from_filename(source)
                 break
-            except (IOError, BadStatusLine, exceptions.GCloudError) as ex:
+            except (IOError, BadStatusLine, exceptions.GCloudError, exceptions.BadRequest) as ex:
                 sleep(_repeat * 2 + 1)
                 self._reconnect(self.name)
                 last_ex = ex
@@ -101,9 +145,9 @@ class Bucket(BaseBucket):
         last_ex = None
         for _repeat in range(6):
             try:
-                key.download_to_filename(target)
+                self.download_with_verification(key, target)
                 break
-            except (IOError, BadStatusLine, exceptions.GCloudError) as ex:
+            except (IOError, DifferentHashException, BadStatusLine, exceptions.GCloudError) as ex:
                 sleep(_repeat * 2 + 1)
                 self._reconnect(self.name)
                 key = self.handle.get_blob(source)

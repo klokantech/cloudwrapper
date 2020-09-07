@@ -22,6 +22,7 @@ extras_requires = {
         'gcloud==0.18.3',
         'gcloud_taskqueue==0.1.2',
         'google-api-python-client==1.7.11',
+        'crc32c==2.0.1',
         'oauth2client==4.1.3',
         'PyYAML==5.1.2',
         'requests==2.22.0',

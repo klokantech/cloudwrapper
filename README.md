@@ -28,7 +28,7 @@ Wrappers around cloud services for Amazon, Google and private cloud.
       - `gcloud==0.18.3`
       - `gcloud_taskqueue==0.1.2`
       - `google-api-python-client==1.7.11`
-      - `crc32c==2.0.1`
+      - `crc32c==2.1`
       - `oauth2client==4.1.3`
       - `PyYAML==5.1.2`
       - `requests==2.22.0`
@@ -68,6 +68,7 @@ https://github.com/klokantech/cloudwrapper/archive/master.zip
 
 The latest released versions:
 
+ - v2.4 : `https://github.com/klokantech/cloudwrapper/archive/v2.4.zip`
  - v2.3 : `https://github.com/klokantech/cloudwrapper/archive/v2.3.zip`
  - v2.2 : `https://github.com/klokantech/cloudwrapper/archive/v2.2.zip`
  - v2.1 : `https://github.com/klokantech/cloudwrapper/archive/v2.1.zip`
@@ -86,7 +87,7 @@ The link for older version has this format: `https://github.com/klokantech/cloud
 ```bash
 apt-get install python-setuptools
 easy_install pip
-pip install https://github.com/klokantech/cloudwrapper/archive/v2.3.zip
+pip install https://github.com/klokantech/cloudwrapper/archive/v2.4.zip
 ```
 
 ### Python3
@@ -94,7 +95,7 @@ pip install https://github.com/klokantech/cloudwrapper/archive/v2.3.zip
 ```bash
 apt-get install python3-setuptools
 easy_install3 pip
-pip3 install https://github.com/klokantech/cloudwrapper/archive/v2.3.zip
+pip3 install https://github.com/klokantech/cloudwrapper/archive/v2.4.zip
 ```
 
 

@@ -20,7 +20,7 @@ except ImportError:
     from warnings import warn
     install_modules = [
         'gcloud==0.18.3',
-        'crc32c==2.0.1',
+        'crc32c==2.1',
     ]
     warn('cloudwrapper.gcs requires these packages:\n  - {}'.format(
         '\n  - '.join(install_modules)))
@@ -48,12 +48,11 @@ class Crc32cCalculator:
 
     def __init__(self, fileobj):
         self._fileobj = fileobj
-        self.crc32 = crc32c.Checksum()
+        self.crc32 = ''
 
     def write(self, chunk):
         self._fileobj.write(chunk)
-        self.crc32.update(chunk)
-
+        self.crc32 = crc32c.crc32c(chunk, self.crc32)
 
 
 class GcsConnection(object):
@@ -101,7 +100,7 @@ class Bucket(BaseBucket):
         connection = storage.Client()
         self.handle = connection.get_bucket(name)
 
-    def crc32c_hash_b64encode(crc32c_hash):
+    def crc32c_hash_b64encode(self, crc32c_hash):
         return base64.b64encode(struct.pack(">I", crc32c_hash)).decode("utf-8")
 
     def download_with_verification(self, blob, target):
@@ -111,7 +110,7 @@ class Bucket(BaseBucket):
                 parser = Crc32cCalculator(blob_file)
                 blob.download_to_file(parser)
 
-            if crc32c_hash_b64encode(parser.crc32._crc) != source_blob_crc32c:
+            if self.crc32c_hash_b64encode(parser.crc32._crc) != source_blob_crc32c:
                 os.remove(target)
                 raise DifferentHashException("The hash of source and target are different.")
 
@@ -121,8 +120,8 @@ class Bucket(BaseBucket):
             try:
                 key = self.handle.blob(target, chunk_size=self.CHUNK_SIZE)
                 with open(target, "rb") as blob_file:
-                    crc32 = crc32c.Checksum(blob_file.read())
-                key.crc32c = self.crc32c_hash_b64encode(crc32._crc)
+                    crc32 = crc32c.crc32c(blob_file.read())
+                key.crc32c = self.crc32c_hash_b64encode(crc32)
                 key.upload_from_filename(source)
                 break
             except (IOError, BadStatusLine, exceptions.GCloudError, exceptions.BadRequest) as ex:

@@ -119,7 +119,7 @@ class Bucket(BaseBucket):
         for _repeat in range(6):
             try:
                 key = self.handle.blob(target, chunk_size=self.CHUNK_SIZE)
-                with open(target, "rb") as blob_file:
+                with open(source, "rb") as blob_file:
                     crc32 = crc32c.crc32c(blob_file.read())
                 key.crc32c = self.crc32c_hash_b64encode(crc32)
                 key.upload_from_filename(source)

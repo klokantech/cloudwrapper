@@ -7,9 +7,12 @@ Author: Martin Mikita <martin.mikita@klokantech.com>
 
 import os
 
+from .base import BaseBucket
+
 try:
     from boto.s3 import connect_to_region, connection
     from boto.exception import S3ResponseError
+    from boto.s3.connection import ProtocolIndependentOrdinaryCallingFormat
 except ImportError:
     from warnings import warn
     install_modules = [
@@ -33,12 +36,14 @@ class S3Connection(object):
             self.connection = connection.S3Connection(
                 host=host,
                 aws_access_key_id=key,
-                aws_secret_access_key=secret)
+                aws_secret_access_key=secret,
+                calling_format=ProtocolIndependentOrdinaryCallingFormat())
         else:
             self.connection = connect_to_region(
                 region,
                 aws_access_key_id=key,
-                aws_secret_access_key=secret)
+                aws_secret_access_key=secret,
+                calling_format=ProtocolIndependentOrdinaryCallingFormat())
 
     def bucket(self, name, create=False):
         for _ in range(6):
@@ -51,7 +56,7 @@ class S3Connection(object):
                 raise
 
 
-class Bucket(object):
+class Bucket(BaseBucket):
 
     PART_LIMIT = (4 << 30)  # 4 GB
 
@@ -80,3 +85,11 @@ class Bucket(object):
     def get(self, source, target):
         key = self.handle.get_key(source, validate=False)
         key.get_contents_to_filename(target)
+
+    def has(self, source):
+        key = self.handle.get_key(source, validate=False)
+        return key.exists()
+
+    def list(self, prefix=None):
+        for key in self.handle.get_all_keys(prefix=prefix):
+            yield key

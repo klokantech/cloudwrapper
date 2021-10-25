@@ -2,7 +2,7 @@
 
 Wrappers around cloud services for Amazon, Google and private cloud.
 
-**Copyright**: (C) 2016-2020 Klokan Technologies GmbH (https://www.klokantech.com/)
+**Copyright**: (C) 2016-2021 Klokan Technologies GmbH (https://www.klokantech.com/)
 
 **Maintainer**: Martin Mikita, martin.mikita@klokantech.com
 
@@ -68,6 +68,7 @@ https://github.com/klokantech/cloudwrapper/archive/master.zip
 
 The latest released versions:
 
+ - v2.6 : `https://github.com/klokantech/cloudwrapper/archive/v2.6.zip`
  - v2.5 : `https://github.com/klokantech/cloudwrapper/archive/v2.5.zip`
  - v2.4 : `https://github.com/klokantech/cloudwrapper/archive/v2.4.zip`
  - v2.3 : `https://github.com/klokantech/cloudwrapper/archive/v2.3.zip`
@@ -75,7 +76,6 @@ The latest released versions:
  - v2.1 : `https://github.com/klokantech/cloudwrapper/archive/v2.1.zip`
  - v2.0 : `https://github.com/klokantech/cloudwrapper/archive/v2.0.zip`
  - v1.24 : `https://github.com/klokantech/cloudwrapper/archive/v1.24.zip`
- - v1.23 : `https://github.com/klokantech/cloudwrapper/archive/v1.23.zip`
 
 The list of all released versions are in the [Releases](https://github.com/klokantech/cloudwrapper/releases) section of this repository.
 The link for older version has this format: `https://github.com/klokantech/cloudwrapper/archive/vX.Y.zip`, where `vX.Y` is the tag on this repository.
@@ -88,7 +88,7 @@ The link for older version has this format: `https://github.com/klokantech/cloud
 ```bash
 apt-get install python-setuptools
 easy_install pip
-pip install https://github.com/klokantech/cloudwrapper/archive/v2.5.zip
+pip install https://github.com/klokantech/cloudwrapper/archive/v2.6.zip
 ```
 
 ### Python3
@@ -96,7 +96,7 @@ pip install https://github.com/klokantech/cloudwrapper/archive/v2.5.zip
 ```bash
 apt-get install python3-setuptools
 easy_install3 pip
-pip3 install https://github.com/klokantech/cloudwrapper/archive/v2.5.zip
+pip3 install https://github.com/klokantech/cloudwrapper/archive/v2.6.zip
 ```
 
 

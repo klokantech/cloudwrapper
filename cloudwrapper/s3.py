@@ -31,12 +31,13 @@ except NameError:
 
 class S3Connection(object):
 
-    def __init__(self, region, key=None, secret=None, host=None):
+    def __init__(self, region, key=None, secret=None, host=None, anon=None):
         if region is None and host is not None:
             self.connection = connection.S3Connection(
                 host=host,
                 aws_access_key_id=key,
                 aws_secret_access_key=secret,
+                anon=anon,
                 calling_format=ProtocolIndependentOrdinaryCallingFormat())
         else:
             self.connection = connect_to_region(
